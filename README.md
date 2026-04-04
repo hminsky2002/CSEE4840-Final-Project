@@ -1,2 +1,22 @@
 # CSEE4840-Final-Project
-Wavetable synthesizer for CSEE4840 final project
+Wavetable synthesizer for CSEE4840 final project. FPGA-specific files live in the 
+hw directory, while all HPS/Linux code lives in the sw directory
+
+# Design Doc
+[Design Doc Google Drive Link ](https://docs.google.com/document/d/1s_W6IeTHjc9uK8sTTZ2ynrz7b73vRMTMJYI5ecwT3QM/edit?usp=sharing)
+
+
+# Resources
+
+## Tutorials
+- [Fpga Academy](https://fpgacademy.org/courses.html): Lots of helpful tutorials for working with our board
+  - [Making a piano tutorial](https://github.com/fpgacademy/Lab_Exercises_Embedded_Systems/releases/download/v1.1/lab8.pdf)
+  - [Making an Oscilliscope](https://github.com/fpgacademy/Lab_Exercises_Embedded_Systems/releases/download/v1.1/lab9.pdf)
+- [Cornell Embedded Systems class final project ideas (audio signal processing section)](https://people.ece.cornell.edu/land/courses/ece5760/FinalProjects/ProjectIdeas.htm)
+  
+
+## Similar Projects 
+- [Synthesizer project from our class from 2019](https://www.cs.columbia.edu/~sedwards/classes/2019/4840-spring/reports/LoopStation.pdf)
+
+## Textbooks
+- [The Art of Digital Audio Textbook](https://velserver.no-ip.org/TVD/ebooks/The%20Art%20of%20Digital%20Audio.pdf)
