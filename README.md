@@ -7,14 +7,22 @@ hw directory, while all HPS/Linux code lives in the sw directory
 
 
 # Resources
+
+## Tutorials
+
+### Verilog
+- [hdl bits](https://hdlbits.01xz.net/wiki/Main_Page) : great website for verilog excersises
+- [verilator tutorial](https://itsembedded.com/dhd/verilator_1/) : verilator is the software we used in lab 1 for writing testbenches
+
+
+### Fpga labs
 - [Fpga Academy](https://fpgacademy.org/courses.html): Lots of helpful tutorials for working with our board
   - [Making a piano tutorial](https://github.com/fpgacademy/Lab_Exercises_Embedded_Systems/releases/download/v1.1/lab8.pdf)
   - [Making an Oscilliscope](https://github.com/fpgacademy/Lab_Exercises_Embedded_Systems/releases/download/v1.1/lab9.pdf)
-- [Cornell Embedded Systems class final project ideas (audio signal processing section)](https://people.ece.cornell.edu/land/courses/ece5760/FinalProjects/ProjectIdeas.htm)
   
-
 ## Similar Projects 
 - [Synthesizer project from our class from 2019](https://www.cs.columbia.edu/~sedwards/classes/2019/4840-spring/reports/LoopStation.pdf)
+- [Cornell Embedded Systems class final project ideas (audio signal processing section)](https://people.ece.cornell.edu/land/courses/ece5760/FinalProjects/ProjectIdeas.htm)
 
 ## Textbooks
 - [System Verilog Textbook](./resources/system-verilog-textbook.pdf)
