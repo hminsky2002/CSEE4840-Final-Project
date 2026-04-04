@@ -7,8 +7,6 @@ hw directory, while all HPS/Linux code lives in the sw directory
 
 
 # Resources
-
-## Tutorials
 - [Fpga Academy](https://fpgacademy.org/courses.html): Lots of helpful tutorials for working with our board
   - [Making a piano tutorial](https://github.com/fpgacademy/Lab_Exercises_Embedded_Systems/releases/download/v1.1/lab8.pdf)
   - [Making an Oscilliscope](https://github.com/fpgacademy/Lab_Exercises_Embedded_Systems/releases/download/v1.1/lab9.pdf)
@@ -19,5 +17,5 @@ hw directory, while all HPS/Linux code lives in the sw directory
 - [Synthesizer project from our class from 2019](https://www.cs.columbia.edu/~sedwards/classes/2019/4840-spring/reports/LoopStation.pdf)
 
 ## Textbooks
-- [System Verilog Textbook](https://d1.amobbs.com/bbs_upload782111/files_39/ourdev_636604WV745I.pdf)
+- [System Verilog Textbook](./resources/system-verilog-textbook.pdf)
 - [The Art of Digital Audio Textbook](https://velserver.no-ip.org/TVD/ebooks/The%20Art%20of%20Digital%20Audio.pdf)
