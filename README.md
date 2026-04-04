@@ -19,4 +19,5 @@ hw directory, while all HPS/Linux code lives in the sw directory
 - [Synthesizer project from our class from 2019](https://www.cs.columbia.edu/~sedwards/classes/2019/4840-spring/reports/LoopStation.pdf)
 
 ## Textbooks
+- [System Verilog Textbook](https://d1.amobbs.com/bbs_upload782111/files_39/ourdev_636604WV745I.pdf)
 - [The Art of Digital Audio Textbook](https://velserver.no-ip.org/TVD/ebooks/The%20Art%20of%20Digital%20Audio.pdf)
