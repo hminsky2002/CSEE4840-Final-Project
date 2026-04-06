@@ -8,6 +8,8 @@ hw directory, while all HPS/Linux code lives in the sw directory
 
 # Resources
 
+- [audio core for de1-soc manual] (https://people.ece.cornell.edu/land/courses/ece5760/DE1_SOC/Audio_core.pdf)
+
 ## Tutorials
 
 ### Verilog
