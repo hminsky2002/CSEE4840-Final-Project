@@ -5,7 +5,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#define MAX_SIM_TIME 500
+#define MAX_SIM_TIME 50000
 #define VERIF_START_TIME 7
 vluint64_t sim_time = 0;
 vluint64_t posedge_cnt = 0;
@@ -42,6 +42,9 @@ int main(int argc, char **argv, char **env) {
       }
       if (sim_time >= VERIF_START_TIME) {
         dut->sample_en = ((posedge_cnt % 10) < 3) ? 1 : 0;
+      }
+      if(sim_time >= 6400){
+        dut->step = 150;
       }
     }
 
