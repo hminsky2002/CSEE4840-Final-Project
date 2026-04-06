@@ -1,0 +1,4 @@
+-std=c++17
+-I/opt/homebrew/share/verilator/include
+-I/opt/homebrew/share/verilator/include/vltstd
+-I/Users/harryminsky/COLUMBIA_SPRING_2026/EMBEDDED/CSEE4840-Final-Project/hw/testbenches/oscillator/obj_dir
