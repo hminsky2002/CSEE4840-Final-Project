@@ -68,6 +68,7 @@ struct libusb_device_handle *open_midi(uint8_t *endpoint_address) {
 	      exit(1);
 	    }
 	    const struct libusb_endpoint_descriptor *ep = NULL;
+        // find endpoint
         for (int e = 0; e < inter->bNumEndpoints; e++) {
             if ((inter->endpoint[e].bEndpointAddress & 0x80) == LIBUSB_ENDPOINT_IN) {
                 ep = &inter->endpoint[e];

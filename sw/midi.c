@@ -67,21 +67,18 @@ int main() {
                           (unsigned char *)&packet, sizeof(packet),
                           &transferred, 500000); 
 
-    printf("endpoint address: 0x%02x\n", endpoint_address);
+    // printf("endpoint address: 0x%02x\n", endpoint_address);
 
     if (r < 0) {
     fprintf(stderr, "bulk_transfer error: %s\n", libusb_error_name(r));
     continue;
     }
-    printf("transferred=%d  bytes: %02x %02x %02x %02x\n",
-        transferred,
+    printf("%02x %02x %02x %02x\n",
         ((uint8_t*)&packet)[0],
         ((uint8_t*)&packet)[1],
         ((uint8_t*)&packet)[2],
         ((uint8_t*)&packet)[3]);
   }
-
-  
 
   return 0;
 }
