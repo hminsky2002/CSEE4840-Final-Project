@@ -23,6 +23,7 @@ int load_wavetable(fpga_handle_t *handle, const char *filepath){
 	// writing into FPGA memory 
 	for (size_t i = 0; i < WAVETABLE_LENGTH; i++) {
 		// might have to do some math here for unsigned???
+		// MAKE THIS IOCTL
 		handle->lw_bridge[WAVETABLE_OFFSET + i] = (uint16_t)(samples[i]); 
 	}
 	return 0;
