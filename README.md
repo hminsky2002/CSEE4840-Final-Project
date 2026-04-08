@@ -9,6 +9,7 @@ hw directory, while all HPS/Linux code lives in the sw directory
 # Resources
 
 - [audio core for de1-soc manual] (https://people.ece.cornell.edu/land/courses/ece5760/DE1_SOC/Audio_core.pdf)
+- [audio video config core](https://ftp.intel.com/Public/Pub/fpgaup/pub/Intel_Material/18.1/University_Program_IP_Cores/Audio_Video/Audio_and_Video_Config.pdf)
 
 ## Tutorials
 
