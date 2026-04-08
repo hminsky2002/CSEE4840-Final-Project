@@ -66,7 +66,15 @@ module soc_system (
 	hps_ddr3_mem_odt,
 	hps_ddr3_mem_dm,
 	hps_ddr3_oct_rzqin,
-	reset_reset_n);	
+	reset_reset_n,
+	audio_0_avalon_right_channel_sink_data,
+	audio_0_avalon_right_channel_sink_valid,
+	audio_0_avalon_right_channel_sink_ready,
+	audio_0_avalon_left_channel_sink_data,
+	audio_0_avalon_left_channel_sink_valid,
+	audio_0_avalon_left_channel_sink_ready,
+	audio_0_reset_reset,
+	audio_0_clk_clk);	
 
 	input		clk_clk;
 	output		hps_hps_io_emac1_inst_TX_CLK;
@@ -135,4 +143,12 @@ module soc_system (
 	output	[3:0]	hps_ddr3_mem_dm;
 	input		hps_ddr3_oct_rzqin;
 	input		reset_reset_n;
+	input	[15:0]	audio_0_avalon_right_channel_sink_data;
+	input		audio_0_avalon_right_channel_sink_valid;
+	output		audio_0_avalon_right_channel_sink_ready;
+	input	[15:0]	audio_0_avalon_left_channel_sink_data;
+	input		audio_0_avalon_left_channel_sink_valid;
+	output		audio_0_avalon_left_channel_sink_ready;
+	input		audio_0_reset_reset;
+	input		audio_0_clk_clk;
 endmodule
