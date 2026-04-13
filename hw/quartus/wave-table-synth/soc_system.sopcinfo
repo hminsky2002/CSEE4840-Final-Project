@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="soc_system" version="1.0" fabric="QSYS">
  <!-- Format version 21.1 842 (Future versions may contain additional information.) -->
- <!-- 2026.04.08.14:39:07 -->
+ <!-- 2026.04.09.13:02:57 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1775673546</value>
+  <value>1775754177</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -145,7 +145,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="AUTO_CLK_CLOCK_RATE">
    <type>java.lang.Long</type>
-   <value>12288135</value>
+   <value>50000000</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -216,7 +216,7 @@ parameters are a RESULT of the module parameters. -->
    </parameter>
    <parameter name="clockRate">
     <type>java.lang.Long</type>
-    <value>12288135</value>
+    <value>50000000</value>
     <derived>true</derived>
     <enabled>true</enabled>
     <visible>false</visible>
@@ -1040,7 +1040,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="AUTO_CLK_CLOCK_RATE">
    <type>java.lang.Long</type>
-   <value>12288135</value>
+   <value>50000000</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -1111,7 +1111,7 @@ parameters are a RESULT of the module parameters. -->
    </parameter>
    <parameter name="clockRate">
     <type>java.lang.Long</type>
-    <value>12288135</value>
+    <value>50000000</value>
     <derived>true</derived>
     <enabled>true</enabled>
     <visible>false</visible>
@@ -1832,18 +1832,6 @@ parameters are a RESULT of the module parameters. -->
     <width>1</width>
     <role>clk</role>
    </port>
-   <clockDomainMember>
-    <isBridge>false</isBridge>
-    <moduleName>audio_and_video_config_0</moduleName>
-    <slaveName>clk</slaveName>
-    <name>audio_and_video_config_0.clk</name>
-   </clockDomainMember>
-   <clockDomainMember>
-    <isBridge>false</isBridge>
-    <moduleName>audio_0</moduleName>
-    <slaveName>clk</slaveName>
-    <name>audio_0.clk</name>
-   </clockDomainMember>
   </interface>
   <interface name="reset_source" kind="reset_source" version="21.1">
    <!-- The connection points exposed by a module instance for the
@@ -2142,6 +2130,18 @@ parameters are a RESULT of the module parameters. -->
     <width>1</width>
     <role>clk</role>
    </port>
+   <clockDomainMember>
+    <isBridge>false</isBridge>
+    <moduleName>audio_and_video_config_0</moduleName>
+    <slaveName>clk</slaveName>
+    <name>audio_and_video_config_0.clk</name>
+   </clockDomainMember>
+   <clockDomainMember>
+    <isBridge>false</isBridge>
+    <moduleName>audio_0</moduleName>
+    <slaveName>clk</slaveName>
+    <name>audio_0.clk</name>
+   </clockDomainMember>
    <clockDomainMember>
     <isBridge>false</isBridge>
     <moduleName>hps_0_bridges</moduleName>
@@ -85392,10 +85392,10 @@ parameters are a RESULT of the module parameters. -->
   <endConnectionPoint>avalon_av_config_slave</endConnectionPoint>
  </connection>
  <connection
-   name="audio_pll_0.audio_clk/audio_and_video_config_0.clk"
+   name="clk_0.clk/audio_and_video_config_0.clk"
    kind="clock"
    version="21.1"
-   start="audio_pll_0.audio_clk"
+   start="clk_0.clk"
    end="audio_and_video_config_0.clk">
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
@@ -85413,16 +85413,16 @@ parameters are a RESULT of the module parameters. -->
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
-  <startModule>audio_pll_0</startModule>
-  <startConnectionPoint>audio_clk</startConnectionPoint>
+  <startModule>clk_0</startModule>
+  <startConnectionPoint>clk</startConnectionPoint>
   <endModule>audio_and_video_config_0</endModule>
   <endConnectionPoint>clk</endConnectionPoint>
  </connection>
  <connection
-   name="audio_pll_0.audio_clk/audio_0.clk"
+   name="clk_0.clk/audio_0.clk"
    kind="clock"
    version="21.1"
-   start="audio_pll_0.audio_clk"
+   start="clk_0.clk"
    end="audio_0.clk">
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
@@ -85440,8 +85440,8 @@ parameters are a RESULT of the module parameters. -->
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
-  <startModule>audio_pll_0</startModule>
-  <startConnectionPoint>audio_clk</startConnectionPoint>
+  <startModule>clk_0</startModule>
+  <startConnectionPoint>clk</startConnectionPoint>
   <endModule>audio_0</endModule>
   <endConnectionPoint>clk</endConnectionPoint>
  </connection>
@@ -85552,73 +85552,6 @@ parameters are a RESULT of the module parameters. -->
   <startConnectionPoint>clk</startConnectionPoint>
   <endModule>audio_pll_0</endModule>
   <endConnectionPoint>ref_clk</endConnectionPoint>
- </connection>
- <connection
-   name="audio_0.external_interface/audio_and_video_config_0.external_interface"
-   kind="conduit"
-   version="21.1"
-   start="audio_0.external_interface"
-   end="audio_and_video_config_0.external_interface">
-  <parameter name="endPort">
-   <type>com.altera.entityinterfaces.IPort</type>
-   <value></value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <parameter name="endPortLSB">
-   <type>int</type>
-   <value>0</value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <parameter name="startPort">
-   <type>com.altera.entityinterfaces.IPort</type>
-   <value></value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <parameter name="startPortLSB">
-   <type>int</type>
-   <value>0</value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <parameter name="width">
-   <type>int</type>
-   <value>0</value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <parameter name="deviceFamily">
-   <type>java.lang.String</type>
-   <value>UNKNOWN</value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <parameter name="generateLegacySim">
-   <type>boolean</type>
-   <value>false</value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
-  <startModule>audio_0</startModule>
-  <startConnectionPoint>external_interface</startConnectionPoint>
-  <endModule>audio_and_video_config_0</endModule>
-  <endConnectionPoint>external_interface</endConnectionPoint>
  </connection>
  <connection
    name="clk_0.clk_reset/audio_pll_0.ref_reset"
@@ -86182,14 +86115,6 @@ parameters are a RESULT of the module parameters. -->
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IConnection</subtype>
   <displayName>Interrupt Connection</displayName>
-  <version>21.1</version>
- </plugin>
- <plugin>
-  <instanceCount>1</instanceCount>
-  <name>conduit</name>
-  <type>com.altera.entityinterfaces.IElementClass</type>
-  <subtype>com.altera.entityinterfaces.IConnection</subtype>
-  <displayName>Conduit Connection</displayName>
   <version>21.1</version>
  </plugin>
  <reportVersion>21.1 842</reportVersion>
