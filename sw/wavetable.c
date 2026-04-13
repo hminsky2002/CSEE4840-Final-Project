@@ -6,32 +6,35 @@
 #include <unistd.h>
 #include <math.h>
 #include "midi_to_fpga.h"
+#include "wavetable.h"
 
-int load_wavetable(fpga_handle_t *handle, const char *filepath){
-	FILE *f = fopen(filepath, "rb");
-	if (!f) {
-		perror("Failed to open wavetable file");
-		return -1;
-	}
-	int16_t samples[WAVETABLE_LENGTH];
-	size_t n = fread(samples, sizeof(int16_t), WAVETABLE_LENGTH, f);
-	fclose(f);
-	if (n != WAVETABLE_LENGTH) {
-		fprintf(stderr, "Failed to read complete wavetable: expected %d samples, got %zu\n", WAVETABLE_LENGTH, n);
-		return -1;
-	}
-	// writing into FPGA memory 
-	for (size_t i = 0; i < WAVETABLE_LENGTH; i++) {
-		// might have to do some math here for unsigned???
-		// MAKE THIS IOCTL
-		handle->lw_bridge[WAVETABLE_OFFSET + i] = (uint16_t)(samples[i]); 
-	}
-	return 0;
+void generate_wavetable(int16_t *samples, wave_type_t type) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        float t = (float)i / TABLE_SIZE;
+        float s;
+        switch (type) {
+            case WAVE_SINE:   s = sinf(2.0f * M_PI * t);                    break;
+            case WAVE_SAW:    s = 2.0f * t - 1.0f;                          break;
+            case WAVE_SQUARE: s = t < 0.5f ? 1.0f : -1.0f;                  break;
+            case WAVE_TRI:    s = t < 0.5f ? 4.0f*t - 1.0f : 3.0f - 4.0f*t; break;
+        }
+        samples[i] = (int16_t)(s * 32767);
+    }
 }
 
-uint16_t note_to_step_size(uint8_t note) {
-	double frequency = 440.0 * pow(2.0, (note - 69) / 12.0);
-	uint16_t step_size = (uint16_t)((frequency * (WAVETABLE_LENGTH)) / SAMPLE_RATE);
-	return step_size;
-}
+/* 
+ * example usage 
+ * TODO: delete later
+ */
+// int main() {
+//     int16_t samples[TABLE_SIZE];
+//     generate_wavetable(samples, WAVE_SINE);
+
+//     FILE *f = fopen("wavetable.txt", "w");
+//     for (int i = 0; i < TABLE_SIZE; i++) {
+//         fprintf(f, "%d %d\n", i, samples[i]);
+//     }
+//     fclose(f);
+//     return 0;
+// }
 
