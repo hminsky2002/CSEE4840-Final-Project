@@ -9,10 +9,15 @@ hw directory, while all HPS/Linux code lives in the sw directory
 # Resources
 
 - [audio core for de1-soc manual] (https://people.ece.cornell.edu/land/courses/ece5760/DE1_SOC/Audio_core.pdf)
+- [audio video config core](https://ftp.intel.com/Public/Pub/fpgaup/pub/Intel_Material/18.1/University_Program_IP_Cores/Audio_Video/Audio_and_Video_Config.pdf)
+- [cyclone v processor technical manual] - page 163 HPS_FPGA Bridges Address Map and Register Defintions (https://www.intel.com/programmable/technical-pdfs/683126.pdf)
+  - [memory addresses for different busses](https://www.intel.com/content/www/us/en/programmable/hps/cyclone-v/hps.html)
+
 
 ## Tutorials
 
-### Verilog
+
+## Verilog
 - [hdl bits](https://hdlbits.01xz.net/wiki/Main_Page) : great website for verilog excersises
 - [verilator tutorial](https://itsembedded.com/dhd/verilator_1/) : verilator is the software we used in lab 1 for writing testbenches
 
