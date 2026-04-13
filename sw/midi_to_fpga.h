@@ -43,7 +43,7 @@ void fpga_set_velocity(fpga_handle_t *handle, uint8_t velocity);
 
 uint32_t note_to_step_size(uint8_t midi_note);
 
-int load_wavetable(fpga_handle_t *handle, const char *filepath);
 int write_wavetable_to_fpga(fpga_handle_t *handle, const int16_t *samples, int n);
+int load_wavetable(fpga_handle_t *handle, const char *filepath);
 
 #endif /* HPS_FPGA_BRIDGE_H */

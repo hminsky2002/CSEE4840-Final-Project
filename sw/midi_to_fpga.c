@@ -60,6 +60,14 @@ uint32_t note_to_step_size(uint8_t note) {
 	return (uint32_t)((frequency * (TABLE_SIZE)) / SAMPLE_RATE);
 }
 
+
+int write_wavetable_to_fpga(fpga_handle_t *handle, const int16_t *samples, int n) {
+    for (int i = 0; i < n; i+= 2)
+        handle->lw_bridge[WAVETABLE_OFFSET + i/2] = (((uint32_t)(uint16_t)samples[i + 1] << 16) 
+                                                    | ((uint32_t)(uint16_t)samples[i]));
+    return 0;
+}
+
 int load_wavetable(fpga_handle_t *handle, const char *filepath) {
     FILE *f = fopen(filepath, "rb");
     if (!f) { perror("load_wavetable"); return -1; }
@@ -70,14 +78,7 @@ int load_wavetable(fpga_handle_t *handle, const char *filepath) {
         fprintf(stderr, "load_wavetable: expected %d samples, got %zu\n", TABLE_SIZE, n);
         return -1;
     }
-    for (int i = 0; i < TABLE_SIZE; i++)
-        handle->lw_bridge[WAVETABLE_OFFSET + i] = (uint32_t)(uint16_t)samples[i];
-    return 0;
-}
-
-int write_wavetable_to_fpga(fpga_handle_t *handle, const int16_t *samples, int n) {
-    for (int i = 0; i < n; i++)
-        handle->lw_bridge[WAVETABLE_OFFSET + i] = (uint32_t)(uint16_t)samples[i];
+    write_wavetable_to_fpga(handle, samples, TABLE_SIZE);
     return 0;
 }
 
@@ -85,7 +86,7 @@ int main() {
     /* mmap at startup */
     fpga_handle_t handle; 
     fpga_init(&handle);
-    
+
 #ifdef WAVETABLE_FILE
     load_wavetable(&handle, WAVETABLE_FILE);
 #else
