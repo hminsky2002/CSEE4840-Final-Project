@@ -1,2 +1,8 @@
 verilator_basics/
 sw/*.o
+*db/
+*soc_system/
+*output_files/
+*.qws
+*.bak
+*hpws_isw_handoff/
