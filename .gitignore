@@ -1,4 +1,5 @@
 verilator_basics/
+obj_dir
 sw/*.o
 *db/
 *soc_system/
