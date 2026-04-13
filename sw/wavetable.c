@@ -22,8 +22,23 @@ void generate_wavetable(int16_t *samples, wave_type_t type) {
     }
 }
 
+void save_wavetable_bin(int16_t *samples, int n, const char *path) {
+    FILE *f = fopen(path, "wb");
+    if (!f) {                          // always check fopen
+        perror("fopen");
+        return;
+    }
+
+    size_t written = fwrite(samples, sizeof(int16_t), n, f);
+    if (written != n) {                // check all samples were written
+        perror("fwrite");
+    }
+
+    fclose(f);
+}
+
 /* 
- * example usage 
+ * example usage: save wavetable to txt file and print
  * TODO: delete later
  */
 // int main() {
@@ -38,3 +53,13 @@ void generate_wavetable(int16_t *samples, wave_type_t type) {
 //     return 0;
 // }
 
+/* 
+ * example usage: save wavetable to bin file
+ * TODO: delete later
+ */
+// int main() {
+//     int16_t samples[TABLE_SIZE];
+//     generate_wavetable(samples, WAVE_SINE);
+//     save_wavetable_bin(samples, TABLE_SIZE, "wavetable.bin");
+//     return 0;
+// }
