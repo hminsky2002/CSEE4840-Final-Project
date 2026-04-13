@@ -1,4 +1,5 @@
 verilator_basics/
+sw/*.o
 *db/
 *soc_system/
 *output_files/
