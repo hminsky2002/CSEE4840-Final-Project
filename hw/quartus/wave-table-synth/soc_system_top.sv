@@ -293,8 +293,16 @@ module soc_system_top(
 	logic ready_right;
 	logic [15:0] sample;
 	logic sample_valid;
-	
-	
+
+	wave_table_synth wave_table_synth0 (
+		.clk         ( CLOCK_50    ),
+		.enable      ( SW[1]       ),
+		.ready_left  ( ready_left  ),
+		.ready_right ( ready_right ),
+		.sample      ( sample      ),
+		.sample_valid( sample_valid)
+	);
+
    assign ADC_CS_N = SW[1] ? SW[0] : 1'bZ;
    assign ADC_DIN = SW[0];
    assign ADC_SCLK = SW[0];
@@ -330,22 +338,6 @@ module soc_system_top(
 
    assign TD_RESET_N = SW[0];
 	
-	// simple square wave to test 
-	logic [31:0] clk_div;
-
-	
-	always_ff @(posedge CLOCK_50) begin
-    if (SW[1] && clk_div >= 56818 - 1) begin
-        clk_div <= 0;
-        sample <= sample[15] ? 16'h1FFF : 16'h8001;
-    end else if (!SW[1]) begin
-        clk_div <= 0;
-        sample <= 16'h0000;
-    end else begin
-        clk_div <= clk_div + 1;
-    end
-    sample_valid <= ready_left & ready_right;
-    end
 
                                                                   
 endmodule
