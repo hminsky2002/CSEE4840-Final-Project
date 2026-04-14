@@ -46,8 +46,8 @@ TARFILES = Makefile \
 	$(SYSTEM)_top.sv \
 	$(BOARD_INFO) \
 	$(SRF) \
-	ip/intr_capturer/intr_capturer.v \
-	ip/intr_capturer/intr_capturer_hw.tcl \
+	wave_table_synth.sv \
+	wave_table_synth_hw.tcl \
 	vga_ball.sv
 
 TARFILE = lab3-hw.tar.gz
