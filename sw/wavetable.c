@@ -30,7 +30,7 @@ void save_wavetable_bin(int16_t *samples, int n, const char *path) {
     }
 
     size_t written = fwrite(samples, sizeof(int16_t), n, f);
-    if (written != n) {                // check all samples were written
+    if (written != (size_t)n) {        // check all samples were written
         perror("fwrite");
     }
 
