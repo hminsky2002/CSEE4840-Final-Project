@@ -294,15 +294,6 @@ module soc_system_top(
 	logic [15:0] sample;
 	logic sample_valid;
 
-	wave_table_synth wave_table_synth0 (
-		.clk         ( CLOCK_50    ),
-		.enable      ( SW[1]       ),
-		.ready_left  ( ready_left  ),
-		.ready_right ( ready_right ),
-		.sample      ( sample      ),
-		.sample_valid( sample_valid)
-	);
-
    assign ADC_CS_N = SW[1] ? SW[0] : 1'bZ;
    assign ADC_DIN = SW[0];
    assign ADC_SCLK = SW[0];

@@ -1,5 +1,11 @@
 module wave_table_synth (
     input  logic        clk,
+    input logic        reset,
+    input logic [15:0]  writedata,
+	output logic [15:0]  readdata,
+    input logic        write,
+    input logic        chipselect,
+    input logic [2:0]  address,
     input  logic        enable,
     input  logic        ready_left,
     input  logic        ready_right,
