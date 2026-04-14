@@ -25,7 +25,8 @@ int midi_read(struct libusb_device_handle *midi,
     int transferred;
     int r = libusb_bulk_transfer(midi, endpoint_address,
         buf, sizeof(buf),
-        &transferred, 500000); 
+        &transferred, 500000);
+    if (r < 0) return r;
 
     evt->cable      = buf[0];
     evt->status     = buf[1];

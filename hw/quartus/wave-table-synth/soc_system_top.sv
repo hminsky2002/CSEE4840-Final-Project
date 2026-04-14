@@ -283,7 +283,12 @@ module soc_system_top(
 	  .audio_and_video_config_0_external_interface_SDAT(FPGA_I2C_SDAT),
 	  .audio_and_video_config_0_external_interface_SCLK(FPGA_I2C_SCLK),
 	  
-	  .audio_pll_0_audio_clk_clk(AUD_XCK)
+	  .audio_pll_0_audio_clk_clk(AUD_XCK),
+
+	  .wave_table_synth_0_wave_table_synth_sample      ( sample       ),
+	  .wave_table_synth_0_wave_table_synth_sample_valid ( sample_valid ),
+	  .wave_table_synth_0_wave_table_synth_ready_left   ( ready_left   ),
+	  .wave_table_synth_0_wave_table_synth_ready_right  ( ready_right  ),
   );
 
    // The following quiet the "no driver" warnings for output
@@ -293,8 +298,7 @@ module soc_system_top(
 	logic ready_right;
 	logic [15:0] sample;
 	logic sample_valid;
-	
-	
+
    assign ADC_CS_N = SW[1] ? SW[0] : 1'bZ;
    assign ADC_DIN = SW[0];
    assign ADC_SCLK = SW[0];
@@ -330,22 +334,6 @@ module soc_system_top(
 
    assign TD_RESET_N = SW[0];
 	
-	// simple square wave to test 
-	logic [31:0] clk_div;
-
-	
-	always_ff @(posedge CLOCK_50) begin
-    if (SW[1] && clk_div >= 56818 - 1) begin
-        clk_div <= 0;
-        sample <= sample[15] ? 16'h1FFF : 16'h8001;
-    end else if (!SW[1]) begin
-        clk_div <= 0;
-        sample <= 16'h0000;
-    end else begin
-        clk_div <= clk_div + 1;
-    end
-    sample_valid <= ready_left & ready_right;
-    end
 
                                                                   
 endmodule
