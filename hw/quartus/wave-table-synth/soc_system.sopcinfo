@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="soc_system" version="1.0" fabric="QSYS">
  <!-- Format version 21.1 842 (Future versions may contain additional information.) -->
- <!-- 2026.04.13.20:43:54 -->
+ <!-- 2026.04.13.20:57:52 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1776127433</value>
+  <value>1776128272</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -75259,6 +75259,18 @@ parameters are a RESULT of the module parameters. -->
    path="wave_table_synth_0">
   <!-- Describes a single module. Module parameters are
 the requested settings for a module instance. -->
+  <assignment>
+   <name>embeddedsw.dts.group</name>
+   <value>synth</value>
+  </assignment>
+  <assignment>
+   <name>embeddedsw.dts.name</name>
+   <value>wave_table_synth</value>
+  </assignment>
+  <assignment>
+   <name>embeddedsw.dts.vendor</name>
+   <value>csee4840</value>
+  </assignment>
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
    <value>UNKNOWN</value>
@@ -75730,7 +75742,7 @@ parameters are a RESULT of the module parameters. -->
     <role>address</role>
    </port>
   </interface>
-  <interface name="synth" kind="conduit_end" version="21.1">
+  <interface name="wave_table" kind="conduit_end" version="21.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->

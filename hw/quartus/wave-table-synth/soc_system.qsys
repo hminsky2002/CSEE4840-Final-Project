@@ -57,6 +57,14 @@
          type = "String";
       }
    }
+   element soc_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
    element wave_table_synth_0
    {
       datum _sortIndex
@@ -115,9 +123,10 @@
  <interface name="hps" internal="hps_0.hps_io" type="conduit" dir="end" />
  <interface name="hps_ddr3" internal="hps_0.memory" type="conduit" dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
+ <interface name="wave_table_synth_0_synth" internal="wave_table_synth_0.synth" />
  <interface
-   name="wave_table_synth_0_synth"
-   internal="wave_table_synth_0.synth"
+   name="wave_table_synth_0_wave_table"
+   internal="wave_table_synth_0.wave_table"
    type="conduit"
    dir="end" />
  <module

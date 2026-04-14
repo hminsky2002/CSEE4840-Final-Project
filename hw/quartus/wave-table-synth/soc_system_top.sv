@@ -283,7 +283,13 @@ module soc_system_top(
 	  .audio_and_video_config_0_external_interface_SDAT(FPGA_I2C_SDAT),
 	  .audio_and_video_config_0_external_interface_SCLK(FPGA_I2C_SCLK),
 	  
-	  .audio_pll_0_audio_clk_clk(AUD_XCK)
+	  .audio_pll_0_audio_clk_clk(AUD_XCK),
+
+	  .wave_table_synth_0_wave_table_synth_sample      ( sample       ),
+	  .wave_table_synth_0_wave_table_synth_sample_valid ( sample_valid ),
+	  .wave_table_synth_0_wave_table_synth_ready_left   ( ready_left   ),
+	  .wave_table_synth_0_wave_table_synth_ready_right  ( ready_right  ),
+	  .wave_table_synth_0_wave_table_synth_enable       ( SW[1]        )
   );
 
    // The following quiet the "no driver" warnings for output
