@@ -289,7 +289,6 @@ module soc_system_top(
 	  .wave_table_synth_0_wave_table_synth_sample_valid ( sample_valid ),
 	  .wave_table_synth_0_wave_table_synth_ready_left   ( ready_left   ),
 	  .wave_table_synth_0_wave_table_synth_ready_right  ( ready_right  ),
-	  .wave_table_synth_0_wave_table_synth_enable       ( SW[1]        )
   );
 
    // The following quiet the "no driver" warnings for output
