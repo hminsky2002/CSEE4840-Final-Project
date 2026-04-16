@@ -23,7 +23,7 @@
 // address[16:12] = slot (0-31), address[11:0] = sample index (0-4095)
 #define WAVETABLE_BASE_OFFSET  (SYNTH_BASE_WORD_OFFSET + (1 << 17))
 #define WAVETABLE_SLOT_WORDS   4096
-#define WAVETABLE_NUM_SLOTS    32
+#define WAVETABLE_NUM_SLOTS    12
 
 #define TABLE_SIZE  4096
 #define SAMPLE_RATE 48000

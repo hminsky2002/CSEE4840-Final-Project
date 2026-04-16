@@ -13,7 +13,7 @@ module wave_table_synth (
 );
 
     localparam int NUM_VOICES      = 8;
-    localparam int WAVETABLE_DEPTH = 32 * 4096; // 32 slots x 4096 samples
+    localparam int WAVETABLE_DEPTH = 12 * 4096; // 12 slots x 4096 samples
 
     // ─── Address decode ─────────────────────────────────────────
     // address[17]   = 0: control registers, 1: wavetable data
@@ -27,7 +27,7 @@ module wave_table_synth (
     logic        note_on_reg    [0:NUM_VOICES-1];
     logic [15:0] step_size_reg  [0:NUM_VOICES-1];
     logic [6:0]  velocity_reg   [0:NUM_VOICES-1];
-    logic [4:0]  slot_select_reg[0:NUM_VOICES-1];
+    logic [3:0]  slot_select_reg[0:NUM_VOICES-1];
 
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -35,14 +35,14 @@ module wave_table_synth (
                 note_on_reg[i]     <= 1'b0;
                 step_size_reg[i]   <= 16'd0;
                 velocity_reg[i]    <= 7'd0;
-                slot_select_reg[i] <= 5'd0;
+                slot_select_reg[i] <= 4'd0;
             end
         end else if (chipselect && write && !is_wavetable) begin
             case (reg_sel)
                 2'd0: note_on_reg[voice_sel]     <= writedata[0];
                 2'd1: step_size_reg[voice_sel]   <= writedata;
                 2'd2: velocity_reg[voice_sel]    <= writedata[6:0];
-                2'd3: slot_select_reg[voice_sel] <= writedata[4:0];
+                2'd3: slot_select_reg[voice_sel] <= writedata[3:0];
             endcase
         end
     end
@@ -53,13 +53,13 @@ module wave_table_synth (
     logic [15:0] wavetable_mem [0:WAVETABLE_DEPTH-1];
 
     logic [15:0] avalon_rdata;
-    logic [16:0] dds_read_addr;
+    logic [15:0] dds_read_addr;
     logic [15:0] dds_rdata;
 
     always_ff @(posedge clk) begin
         if (chipselect && write && is_wavetable)
-            wavetable_mem[address[16:0]] <= writedata;
-        avalon_rdata <= wavetable_mem[address[16:0]];
+            wavetable_mem[address[15:0]] <= writedata;
+        avalon_rdata <= wavetable_mem[address[15:0]];
         dds_rdata    <= wavetable_mem[dds_read_addr];
     end
 
@@ -73,7 +73,7 @@ module wave_table_synth (
             2'd0: ctrl_rdata <= {15'b0, note_on_reg[voice_sel]};
             2'd1: ctrl_rdata <= step_size_reg[voice_sel];
             2'd2: ctrl_rdata <= {9'b0, velocity_reg[voice_sel]};
-            2'd3: ctrl_rdata <= {11'b0, slot_select_reg[voice_sel]};
+            2'd3: ctrl_rdata <= {12'b0, slot_select_reg[voice_sel]};
         endcase
     end
 
