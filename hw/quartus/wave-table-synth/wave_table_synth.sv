@@ -5,7 +5,9 @@ module wave_table_synth (
     output logic [15:0] readdata,
     input  logic        write,
     input  logic        chipselect,
+    /* verilator lint_off UNUSEDSIGNAL */
     input  logic [17:0] address,
+    /* verilator lint_on UNUSEDSIGNAL */
     input  logic        ready_left,
     input  logic        ready_right,
     output logic [15:0] sample,
@@ -83,19 +85,16 @@ module wave_table_synth (
     // Top 12 bits [19:8] = wavetable index, bottom 8 bits = fractional
     logic [19:0] phase_acc [0:NUM_VOICES-1];
 
-    // ─── Sample tick detection ──────────────────────────────────
-    logic prev_ready;
-    wire  sample_tick = ready_left & ready_right & ~prev_ready;
-
-    always_ff @(posedge clk) begin
-        if (reset) prev_ready <= 1'b0;
-        else       prev_ready <= ready_left & ready_right;
-    end
-
-    // ─── Time-multiplexed DDS engine ───────────────��────────────
+    // ─── Time-multiplexed DDS engine ────────────────────────────
     // States: IDLE → READ → WAIT → ACC (×8 voices) → DONE
     // WAIT lets the registered BRAM output settle before ACC uses it.
-    typedef enum logic [2:0] { S_IDLE, S_READ, S_WAIT, S_ACC, S_DONE } state_t;
+    // sample_valid pulses high for exactly one cycle per sample; the
+    // S_IDLE gate (!sample_valid) throttles the next compute so we don't
+    // push duplicates while the Avalon-ST sink's ready is high.
+    wire sink_ready = ready_left & ready_right;
+    typedef enum logic [2:0] {
+        S_IDLE, S_READ, S_WAIT, S_ACC, S_DONE
+    } state_t;
     state_t state;
 
     logic [2:0]  voice_idx;
@@ -121,7 +120,9 @@ module wave_table_synth (
 
             case (state)
                 S_IDLE: begin
-                    if (sample_tick) begin
+                    // Start a new sample when the sink can accept one and
+                    // we don't have a pending sample waiting for handshake.
+                    if (sink_ready && !sample_valid) begin
                         voice_idx <= 3'd0;
                         mix_acc   <= 19'sd0;
                         state     <= S_READ;

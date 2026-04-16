@@ -135,10 +135,10 @@ int main(int argc, char **argv) {
         check(msg, v, avalon_read(dut, trace, CTRL_ADDR(v, REG_SLOT_SEL)));
     }
 
-    // ── Test 5: Boundary — last sample in slot 31 ────────────
-    printf("Test 5: Boundary write (slot 31, sample 4095)...\n");
-    avalon_write(dut, trace, WT_ADDR(31, 4095), 0xDEAD);
-    check("slot31[4095]", 0xDEAD, avalon_read(dut, trace, WT_ADDR(31, 4095)));
+    // ── Test 5: Boundary — last sample in last slot (11) ─────
+    printf("Test 5: Boundary write (slot 11, sample 4095)...\n");
+    avalon_write(dut, trace, WT_ADDR(11, 4095), 0xDEAD);
+    check("slot11[4095]", 0xDEAD, avalon_read(dut, trace, WT_ADDR(11, 4095)));
 
     // ── Results ───────────────────────────────────────────────
     printf("\n=== Results: %d passed, %d failed ===\n", test_pass, test_fail);
