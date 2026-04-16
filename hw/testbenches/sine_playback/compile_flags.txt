@@ -1,0 +1,4 @@
+-std=c++17
+-I/opt/homebrew/share/verilator/include
+-I/opt/homebrew/share/verilator/include/vltstd
+-Iobj_dir
