@@ -143,15 +143,16 @@ int main() {
     printf(" ok\n");
 
     int16_t samples[TABLE_SIZE];
+    printf("Loading generated wavetables");
     generate_wavetable(samples, WAVE_SINE);
-    write_wavetable_to_fpga(&handle, 0, samples, TABLE_SIZE);
+    write_wavetable_to_fpga(&handle, 0, samples, TABLE_SIZE); printf(".");
     generate_wavetable(samples, WAVE_SAW);
-    write_wavetable_to_fpga(&handle, 1, samples, TABLE_SIZE);
+    write_wavetable_to_fpga(&handle, 1, samples, TABLE_SIZE); printf(".");
     generate_wavetable(samples, WAVE_SQUARE);
-    write_wavetable_to_fpga(&handle, 2, samples, TABLE_SIZE);
+    write_wavetable_to_fpga(&handle, 2, samples, TABLE_SIZE); printf(".");
     generate_wavetable(samples, WAVE_TRI);
-    write_wavetable_to_fpga(&handle, 3, samples, TABLE_SIZE);
-    printf("Wavetables loaded into slots 0-3\n");
+    write_wavetable_to_fpga(&handle, 3, samples, TABLE_SIZE); printf(".");
+    printf(" done\n");
 
     int looped_samples[] = {1, 2, 5, 6, 7, 8, 17, 18};
     for (int i = 0; i < 8; i++)
