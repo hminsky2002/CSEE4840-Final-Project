@@ -123,8 +123,15 @@ int load_wavetable(fpga_handle_t *handle, uint8_t slot, const char *filepath) {
 }
 
 int main() {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    printf("midi_to_fpga: starting up\n");
+
     fpga_handle_t handle;
-    fpga_init(&handle);
+    if (fpga_init(&handle) < 0) {
+        fprintf(stderr, "fpga_init failed — run with sudo?\n");
+        return 1;
+    }
+    printf("mmap'd lw_bridge at %p\n", (void *)handle.lw_bridge);
     g_handle = &handle;
     signal(SIGINT, handle_sigint);
 
