@@ -135,6 +135,13 @@ int main() {
     g_handle = &handle;
     signal(SIGINT, handle_sigint);
 
+    printf("probe: writing voice0 note_on=0 ...");
+    fpga_set_note_on(&handle, 0, 0);
+    printf(" ok\n");
+    printf("probe: writing wavetable[0][0]=0 ...");
+    handle.lw_bridge[WAVETABLE_BASE_OFFSET] = 0;
+    printf(" ok\n");
+
     int16_t samples[TABLE_SIZE];
     generate_wavetable(samples, WAVE_SINE);
     write_wavetable_to_fpga(&handle, 0, samples, TABLE_SIZE);
