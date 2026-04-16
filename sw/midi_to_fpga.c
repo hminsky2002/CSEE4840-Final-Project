@@ -103,8 +103,10 @@ int write_wavetable_to_fpga(fpga_handle_t *handle, uint8_t slot, const int16_t *
     volatile uint16_t *slot_base = handle->lw_bridge
                                  + WAVETABLE_BASE_OFFSET
                                  + ((size_t)slot * WAVETABLE_SLOT_WORDS);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
+        if ((i % 512) == 0) { printf("[slot=%d i=%d]", slot, i); fflush(stdout); }
         slot_base[i] = (uint16_t)samples[i];
+    }
     return 0;
 }
 
@@ -160,8 +162,14 @@ int main() {
     printf("MOD samples loaded into slots 4-11\n");
 
     init_voices();
-    for (int v = 0; v < NUM_VOICES; v++)
-        fpga_set_slot_select(&handle, v, 4);
+    uint8_t current_slot = 4;
+    for (int v = 0; v < NUM_VOICES; v++) {
+        fpga_set_note_on(&handle, v, 0);
+        fpga_set_step_size(&handle, v, 0);
+        fpga_set_velocity(&handle, v, 0);
+        fpga_set_slot_select(&handle, v, current_slot);
+    }
+    printf("All voices silenced, slot_select=%u\n", current_slot);
 
     uint8_t endpoint;
     struct libusb_device_handle *midi_device = midi_open(&endpoint);
@@ -171,6 +179,16 @@ int main() {
         if (midi_read(midi_device, endpoint, &midi_packet) < 0) continue;
 
         uint8_t status = midi_packet.status & MIDI_STATUS_MASK;
+
+        // Top key (note 72) cycles through slots for all voices
+        if (midi_packet.note == 72 && status == MIDI_NOTE_ON && midi_packet.velocity > 0) {
+            current_slot = (current_slot + 1) % WAVETABLE_NUM_SLOTS;
+            for (int v = 0; v < NUM_VOICES; v++)
+                fpga_set_slot_select(&handle, v, current_slot);
+            printf("slot_select = %u\n", current_slot);
+            continue;
+        }
+        if (midi_packet.note == 72) continue;  // ignore note-off for slot key
 
         if (status == MIDI_NOTE_ON && midi_packet.velocity > 0) {
             int v = allocate_voice();
