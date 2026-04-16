@@ -190,6 +190,17 @@ int main() {
         }
         if (midi_packet.note == 72) continue;  // ignore note-off for slot key
 
+        // Lowest key (note 47) panics all voices: silence and reset allocation
+        if (midi_packet.note == 47 && status == MIDI_NOTE_ON && midi_packet.velocity > 0) {
+            for (int v = 0; v < NUM_VOICES; v++) {
+                fpga_set_note_on(&handle, v, 0);
+                voice_states[v].note = -1;
+            }
+            printf("panic: all voices reset\n");
+            continue;
+        }
+        if (midi_packet.note == 47) continue;
+
         if (status == MIDI_NOTE_ON && midi_packet.velocity > 0) {
             int v = allocate_voice();
             if (v < 0) continue;
