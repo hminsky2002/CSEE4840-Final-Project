@@ -3,7 +3,10 @@ Wavetable synthesizer for CSEE4840 final project. FPGA-specific files live in th
 hw directory, while all HPS/Linux code lives in the sw directory
 
 # Design Doc
-[Design Doc Google Drive Link ](https://docs.google.com/document/d/1s_W6IeTHjc9uK8sTTZ2ynrz7b73vRMTMJYI5ecwT3QM/edit?usp=sharing)
+[Wave table design document](./CSEE4840_Design_Document.pdf)
+
+# Proposal
+[Proposal Drive Link ](https://docs.google.com/document/d/1s_W6IeTHjc9uK8sTTZ2ynrz7b73vRMTMJYI5ecwT3QM/edit?usp=sharing)
 
 
 # Resources
