@@ -37,11 +37,20 @@ int find_note(struct oscillator *array, uint8_t note){
     return -1;
 }
 
-void clear_from_array(struct oscillator *array, uint8_t note){
+int clear_from_array(struct oscillator *array, uint8_t note){
+    int cleared = 0;
     for(int i = 0; i < NUM_OSCILLATORS; i++){
         if(array[i].in_use && array[i].note == note){
             array[i] = (struct oscillator){0};
+            cleared++;
         }
+    }
+    return cleared;
+}
+
+void panic_release_all(struct oscillator *array){
+    for(int i = 0; i < NUM_OSCILLATORS; i++){
+        array[i] = (struct oscillator){0};
     }
 }
 
@@ -84,7 +93,9 @@ int main(){
             array[index].wavetable = 0;
         } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF
                    || midi_packet.velocity == 0) {
-            clear_from_array(array, midi_packet.note);
+            if (clear_from_array(array, midi_packet.note) == 0) {
+                panic_release_all(array);
+            }
         }
 
         print_active_oscillators(array);
