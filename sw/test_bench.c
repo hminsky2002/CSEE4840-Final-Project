@@ -72,6 +72,7 @@ int main(){
     uint8_t endpoint;
     struct libusb_device_handle *midi_device = midi_open(&endpoint);
     if(midi_device == NULL){
+        printf("midi device is null\n");
         return -1;
     }
 

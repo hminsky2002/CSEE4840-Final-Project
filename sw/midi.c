@@ -31,6 +31,7 @@ int midi_read(struct libusb_device_handle *midi,
             &transferred, 500000);
         if (r < 0) { transferred = 0; pos = 0; return r; }
         pos = 0;
+        printf("transferred=%d\n", transferred);
         if (transferred < 4) return -1;
     }
 
