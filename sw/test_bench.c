@@ -17,25 +17,32 @@ uint16_t note_to_step_size(uint8_t note) {
 	return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
 }
 
-int find_free_slot(struct oscillator *array, uint8_t note){
+int find_free_slot(struct oscillator *array){
     int i = 0;
     for(i = 0; i < NUM_OSCILLATORS; i++){
-        if(!array[i].in_use && array[i].note != note){
+        if(!array[i].in_use){
             return i;
         }
     }
     return -1;
 }
 
-int clear_from_array(struct oscillator *array, uint8_t note){
+int find_note(struct oscillator *array, uint8_t note){
     int i = 0;
     for(i = 0; i < NUM_OSCILLATORS; i++){
         if(array[i].in_use && array[i].note == note){
-            array[i] = (struct oscillator){0};
             return i;
         }
     }
     return -1;
+}
+
+void clear_from_array(struct oscillator *array, uint8_t note){
+    for(int i = 0; i < NUM_OSCILLATORS; i++){
+        if(array[i].in_use && array[i].note == note){
+            array[i] = (struct oscillator){0};
+        }
+    }
 }
 
 void print_active_oscillators(struct oscillator *array){
@@ -65,7 +72,8 @@ int main(){
         if (midi_read(midi_device, endpoint, &midi_packet) < 0) continue;
 
         if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON && midi_packet.velocity > 0) {
-            int index = find_free_slot(array, midi_packet.note);
+            if (find_note(array, midi_packet.note) != -1) continue;
+            int index = find_free_slot(array);
             if(index == -1){
                 continue;
             }
