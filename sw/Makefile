@@ -12,9 +12,9 @@ endif
 TARGET      = midi_to_fpga
 
 # SOURCES
-SRCS = midi_to_fpga.c wavetable.c midi.c usbmidi.c
+SRCS = midi_to_fpga.c wavetable.c midi.c fpga_bridge.c
 OBJS = $(SRCS:.c=.o)
-DEPS = midi_to_fpga.h wavetable.h midi.h usbmidi.h oscillator.h
+DEPS = midi_to_fpga.h wavetable.h midi.h oscillator.h fpga_bridge.h
 
 # DEFAULT TARGET
 all: $(TARGET)

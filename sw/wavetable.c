@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
+#include <string.h>
 #include <math.h>
-#include "midi_to_fpga.h"
+#include "fpga_bridge.h"
 #include "wavetable.h"
 
 void generate_wavetable(int16_t *samples, wave_type_t type) {
@@ -37,29 +35,119 @@ void save_wavetable_bin(int16_t *samples, int n, const char *path) {
     fclose(f);
 }
 
-/* 
- * example usage: save wavetable to txt file and print
- * TODO: delete later
- */
-// int main() {
-//     int16_t samples[TABLE_SIZE];
-//     generate_wavetable(samples, WAVE_SINE);
+static int read_u32_le(FILE *f, uint32_t *out) {
+    uint8_t b[4];
+    if (fread(b, 1, 4, f) != 4) return -1;
+    *out = (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
+    return 0;
+}
 
-//     FILE *f = fopen("wavetable.txt", "w");
-//     for (int i = 0; i < TABLE_SIZE; i++) {
-//         fprintf(f, "%d %d\n", i, samples[i]);
-//     }
-//     fclose(f);
-//     return 0;
-// }
+static int read_u16_le(FILE *f, uint16_t *out) {
+    uint8_t b[2];
+    if (fread(b, 1, 2, f) != 2) return -1;
+    *out = (uint16_t)b[0] | ((uint16_t)b[1] << 8);
+    return 0;
+}
 
-/* 
- * example usage: save wavetable to bin file
- * TODO: delete later
- */
-// int main() {
-//     int16_t samples[TABLE_SIZE];
-//     generate_wavetable(samples, WAVE_SINE);
-//     save_wavetable_bin(samples, TABLE_SIZE, "wavetable.bin");
-//     return 0;
-// }
+int load_wav(const char *path,
+             int16_t **samples_out,
+             size_t   *n_samples_out,
+             uint32_t *sample_rate_out) {
+    FILE *f = fopen(path, "rb");
+    if (!f) { perror("load_wav: fopen"); return -1; }
+
+    char riff[4], wave[4];
+    uint32_t riff_size;
+    if (fread(riff, 1, 4, f) != 4 || read_u32_le(f, &riff_size) != 0 || fread(wave, 1, 4, f) != 4) {
+        fprintf(stderr, "load_wav: %s: short read on RIFF header\n", path);
+        fclose(f); return -1;
+    }
+    if (memcmp(riff, "RIFF", 4) != 0 || memcmp(wave, "WAVE", 4) != 0) {
+        fprintf(stderr, "load_wav: %s: not a RIFF/WAVE file\n", path);
+        fclose(f); return -1;
+    }
+
+    uint16_t audio_format = 0, channels = 0, bits_per_sample = 0;
+    uint32_t sample_rate = 0;
+    int have_fmt = 0;
+
+    while (1) {
+        char id[4];
+        uint32_t size;
+        if (fread(id, 1, 4, f) != 4) {
+            fprintf(stderr, "load_wav: %s: reached EOF before data chunk\n", path);
+            fclose(f); return -1;
+        }
+        if (read_u32_le(f, &size) != 0) {
+            fprintf(stderr, "load_wav: %s: short read on chunk size\n", path);
+            fclose(f); return -1;
+        }
+
+        if (memcmp(id, "fmt ", 4) == 0) {
+            uint16_t block_align;
+            uint32_t byte_rate;
+            if (read_u16_le(f, &audio_format) != 0 ||
+                read_u16_le(f, &channels) != 0 ||
+                read_u32_le(f, &sample_rate) != 0 ||
+                read_u32_le(f, &byte_rate) != 0 ||
+                read_u16_le(f, &block_align) != 0 ||
+                read_u16_le(f, &bits_per_sample) != 0) {
+                fprintf(stderr, "load_wav: %s: short read on fmt chunk\n", path);
+                fclose(f); return -1;
+            }
+            (void)byte_rate; (void)block_align;
+            if (size > 16) fseek(f, size - 16, SEEK_CUR);
+            if (size & 1) fseek(f, 1, SEEK_CUR);
+            have_fmt = 1;
+        } else if (memcmp(id, "data", 4) == 0) {
+            if (!have_fmt) {
+                fprintf(stderr, "load_wav: %s: data chunk before fmt chunk\n", path);
+                fclose(f); return -1;
+            }
+            if (audio_format != 1) {
+                fprintf(stderr, "load_wav: %s: not PCM (audio_format=%u)\n", path, audio_format);
+                fclose(f); return -1;
+            }
+            if (bits_per_sample != 16) {
+                fprintf(stderr, "load_wav: %s: bits_per_sample=%u, expected 16\n", path, bits_per_sample);
+                fclose(f); return -1;
+            }
+            if (channels != 1 && channels != 2) {
+                fprintf(stderr, "load_wav: %s: channels=%u, expected 1 or 2\n", path, channels);
+                fclose(f); return -1;
+            }
+
+            size_t total_samples = size / sizeof(int16_t);
+            size_t mono_samples = total_samples / channels;
+            int16_t *buf = malloc(mono_samples * sizeof(int16_t));
+            if (!buf) { perror("load_wav: malloc"); fclose(f); return -1; }
+
+            if (channels == 1) {
+                if (fread(buf, sizeof(int16_t), mono_samples, f) != mono_samples) {
+                    fprintf(stderr, "load_wav: %s: short read on data\n", path);
+                    free(buf); fclose(f); return -1;
+                }
+            } else {
+                int16_t pair[2];
+                for (size_t i = 0; i < mono_samples; i++) {
+                    if (fread(pair, sizeof(int16_t), 2, f) != 2) {
+                        fprintf(stderr, "load_wav: %s: short read on stereo data\n", path);
+                        free(buf); fclose(f); return -1;
+                    }
+                    buf[i] = (int16_t)(((int32_t)pair[0] + (int32_t)pair[1]) / 2);
+                }
+            }
+
+            *samples_out = buf;
+            *n_samples_out = mono_samples;
+            *sample_rate_out = sample_rate;
+            fclose(f);
+            return 0;
+        } else {
+            if (fseek(f, size + (size & 1), SEEK_CUR) != 0) {
+                fprintf(stderr, "load_wav: %s: fseek failed skipping chunk\n", path);
+                fclose(f); return -1;
+            }
+        }
+    }
+}
