@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="soc_system" version="1.0" fabric="QSYS">
  <!-- Format version 21.1 842 (Future versions may contain additional information.) -->
- <!-- 2026.04.13.21:20:55 -->
+ <!-- 2026.04.22.23:21:05 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1776129650</value>
+  <value>1776914461</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -18687,8 +18687,8 @@ parameters are a RESULT of the module parameters. -->
     <moduleName>wave_table_synth_0</moduleName>
     <slaveName>avalon_slave_0</slaveName>
     <name>wave_table_synth_0.avalon_slave_0</name>
-    <baseAddress>16</baseAddress>
-    <span>16</span>
+    <baseAddress>262144</baseAddress>
+    <span>262144</span>
    </memoryBlock>
   </interface>
  </module>
@@ -45280,8 +45280,8 @@ parameters are a RESULT of the module parameters. -->
     <moduleName>wave_table_synth_0</moduleName>
     <slaveName>avalon_slave_0</slaveName>
     <name>wave_table_synth_0.avalon_slave_0</name>
-    <baseAddress>16</baseAddress>
-    <span>16</span>
+    <baseAddress>262144</baseAddress>
+    <span>262144</span>
    </memoryBlock>
   </interface>
   <interface name="f2h_axi_clock" kind="clock_sink" version="21.1">
@@ -46815,8 +46815,8 @@ parameters are a RESULT of the module parameters. -->
     <moduleName>wave_table_synth_0</moduleName>
     <slaveName>avalon_slave_0</slaveName>
     <name>wave_table_synth_0.avalon_slave_0</name>
-    <baseAddress>4280287248</baseAddress>
-    <span>16</span>
+    <baseAddress>4280549376</baseAddress>
+    <span>262144</span>
    </memoryBlock>
    <memoryBlock>
     <isBridge>false</isBridge>
@@ -47654,8 +47654,8 @@ parameters are a RESULT of the module parameters. -->
     <moduleName>wave_table_synth_0</moduleName>
     <slaveName>avalon_slave_0</slaveName>
     <name>wave_table_synth_0.avalon_slave_0</name>
-    <baseAddress>4280287248</baseAddress>
-    <span>16</span>
+    <baseAddress>4280549376</baseAddress>
+    <span>262144</span>
    </memoryBlock>
    <memoryBlock>
     <isBridge>false</isBridge>
@@ -75415,7 +75415,7 @@ parameters are a RESULT of the module parameters. -->
    </parameter>
    <parameter name="addressSpan">
     <type>java.math.BigInteger</type>
-    <value>16</value>
+    <value>262144</value>
     <derived>true</derived>
     <enabled>true</enabled>
     <visible>false</visible>
@@ -75738,7 +75738,7 @@ parameters are a RESULT of the module parameters. -->
    <port>
     <name>address</name>
     <direction>Input</direction>
-    <width>3</width>
+    <width>17</width>
     <role>address</role>
    </port>
   </interface>
@@ -85999,7 +85999,7 @@ parameters are a RESULT of the module parameters. -->
   </parameter>
   <parameter name="baseAddress">
    <type>java.math.BigInteger</type>
-   <value>0x0010</value>
+   <value>0x00040000</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>

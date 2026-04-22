@@ -1,65 +1,38 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <math.h>
-#include "midi_to_fpga.h"
+#include "fpga_bridge.h"
 #include "wavetable.h"
 
-void generate_wavetable(int16_t *samples, wave_type_t type) {
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        float t = (float)i / TABLE_SIZE;
-        float s;
-        switch (type) {
-            case WAVE_SINE:   s = sinf(2.0f * M_PI * t);                    break;
-            case WAVE_SAW:    s = 2.0f * t - 1.0f;                          break;
-            case WAVE_SQUARE: s = t < 0.5f ? 1.0f : -1.0f;                  break;
-            case WAVE_TRI:    s = t < 0.5f ? 4.0f*t - 1.0f : 3.0f - 4.0f*t; break;
+static int g_num_loaded_slots = 0;
+
+int load_wavetable_bin(const char *path, fpga_handle_t *handle) {
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        perror("load_wavetable_bin: fopen");
+        return -1;
+    }
+
+    int16_t slot_buf[TABLE_SIZE];
+    int slot = 0;
+    while (slot < MAX_WAVETABLE_SLOTS) {
+        size_t got = fread(slot_buf, sizeof(int16_t), TABLE_SIZE, f);
+        if (got == 0) break;
+        if (got != TABLE_SIZE) {
+            fprintf(stderr, "load_wavetable_bin: %s: partial slot %d (%zu/%d samples)\n",
+                    path, slot, got, TABLE_SIZE);
+            fclose(f);
+            return -1;
         }
-        samples[i] = (int16_t)(s * 32767);
+        fpga_load_slot(handle, slot, slot_buf, TABLE_SIZE);
+        printf("slot %d: loaded\n", slot);
+        slot++;
     }
-}
-
-void save_wavetable_bin(int16_t *samples, int n, const char *path) {
-    FILE *f = fopen(path, "wb");
-    if (!f) {                          // always check fopen
-        perror("fopen");
-        return;
-    }
-
-    size_t written = fwrite(samples, sizeof(int16_t), n, f);
-    if (written != (size_t)n) {        // check all samples were written
-        perror("fwrite");
-    }
-
     fclose(f);
+
+    g_num_loaded_slots = slot;
+    return slot;
 }
 
-/* 
- * example usage: save wavetable to txt file and print
- * TODO: delete later
- */
-// int main() {
-//     int16_t samples[TABLE_SIZE];
-//     generate_wavetable(samples, WAVE_SINE);
-
-//     FILE *f = fopen("wavetable.txt", "w");
-//     for (int i = 0; i < TABLE_SIZE; i++) {
-//         fprintf(f, "%d %d\n", i, samples[i]);
-//     }
-//     fclose(f);
-//     return 0;
-// }
-
-/* 
- * example usage: save wavetable to bin file
- * TODO: delete later
- */
-// int main() {
-//     int16_t samples[TABLE_SIZE];
-//     generate_wavetable(samples, WAVE_SINE);
-//     save_wavetable_bin(samples, TABLE_SIZE, "wavetable.bin");
-//     return 0;
-// }
+int wavetable_slot_valid(int slot) {
+    return slot >= 0 && slot < g_num_loaded_slots;
+}

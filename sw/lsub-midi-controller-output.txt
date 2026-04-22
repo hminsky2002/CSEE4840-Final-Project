@@ -169,8 +169,3 @@ Device Descriptor:
           bDescriptorSubtype      1 (GENERAL)
           bNumEmbMIDIJack         1
           baAssocJackID( 0)       3
-Device Status:     0xffff
-  Self Powered
-  Remote Wakeup Enabled
-  Test Mode
-  Debug Mod

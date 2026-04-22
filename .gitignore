@@ -7,3 +7,5 @@ sw/*.o
 *.qws
 *.bak
 *hpws_isw_handoff/
+linux-headers-4.19.0
+linux-socfpga
