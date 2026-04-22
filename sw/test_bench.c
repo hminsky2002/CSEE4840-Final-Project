@@ -17,10 +17,10 @@ uint16_t note_to_step_size(uint8_t note) {
 	return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
 }
 
-int find_free_slot(struct oscillator *array){
+int find_free_slot(struct oscillator *array, uint8_t note){
     int i = 0;
     for(i = 0; i < NUM_OSCILLATORS; i++){
-        if(!array[i].in_use){
+        if(!array[i].in_use && array[i].note != note){
             return i;
         }
     }
@@ -65,7 +65,7 @@ int main(){
         if (midi_read(midi_device, endpoint, &midi_packet) < 0) continue;
 
         if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON && midi_packet.velocity > 0) {
-            int index = find_free_slot(array);
+            int index = find_free_slot(array, midi_packet.note);
             if(index == -1){
                 continue;
             }
