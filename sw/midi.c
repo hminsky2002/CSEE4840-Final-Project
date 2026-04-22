@@ -35,6 +35,13 @@ int midi_read(struct libusb_device_handle *midi,
         break;
     }
 
+    printf("%02x %02x %02x %02x\n",
+        evt->status,
+        evt->not_sure,
+        evt->note,
+        evt->attack
+    );
+
     return 0;
 }
 
