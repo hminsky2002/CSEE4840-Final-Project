@@ -108,8 +108,8 @@ int load_wav(const char *path,
                 fprintf(stderr, "load_wav: %s: not PCM (audio_format=%u)\n", path, audio_format);
                 fclose(f); return -1;
             }
-            if (bits_per_sample != 16) {
-                fprintf(stderr, "load_wav: %s: bits_per_sample=%u, expected 16\n", path, bits_per_sample);
+            if (bits_per_sample != 8 && bits_per_sample != 16) {
+                fprintf(stderr, "load_wav: %s: bits_per_sample=%u, expected 8 or 16\n", path, bits_per_sample);
                 fclose(f); return -1;
             }
             if (channels != 1 && channels != 2) {
@@ -117,24 +117,51 @@ int load_wav(const char *path,
                 fclose(f); return -1;
             }
 
-            size_t total_samples = size / sizeof(int16_t);
+            size_t bytes_per_sample = bits_per_sample / 8;
+            size_t total_samples = size / bytes_per_sample;
             size_t mono_samples = total_samples / channels;
             int16_t *buf = malloc(mono_samples * sizeof(int16_t));
             if (!buf) { perror("load_wav: malloc"); fclose(f); return -1; }
 
-            if (channels == 1) {
-                if (fread(buf, sizeof(int16_t), mono_samples, f) != mono_samples) {
-                    fprintf(stderr, "load_wav: %s: short read on data\n", path);
-                    free(buf); fclose(f); return -1;
-                }
-            } else {
-                int16_t pair[2];
-                for (size_t i = 0; i < mono_samples; i++) {
-                    if (fread(pair, sizeof(int16_t), 2, f) != 2) {
-                        fprintf(stderr, "load_wav: %s: short read on stereo data\n", path);
+            if (bits_per_sample == 16) {
+                if (channels == 1) {
+                    if (fread(buf, sizeof(int16_t), mono_samples, f) != mono_samples) {
+                        fprintf(stderr, "load_wav: %s: short read on data\n", path);
                         free(buf); fclose(f); return -1;
                     }
-                    buf[i] = (int16_t)(((int32_t)pair[0] + (int32_t)pair[1]) / 2);
+                } else {
+                    int16_t pair[2];
+                    for (size_t i = 0; i < mono_samples; i++) {
+                        if (fread(pair, sizeof(int16_t), 2, f) != 2) {
+                            fprintf(stderr, "load_wav: %s: short read on stereo data\n", path);
+                            free(buf); fclose(f); return -1;
+                        }
+                        buf[i] = (int16_t)(((int32_t)pair[0] + (int32_t)pair[1]) / 2);
+                    }
+                }
+            } else {
+                /* 8-bit PCM in WAV is UNSIGNED (0-255, 128=silence).
+                 * Center around zero, then shift into the top byte of int16. */
+                if (channels == 1) {
+                    for (size_t i = 0; i < mono_samples; i++) {
+                        uint8_t u;
+                        if (fread(&u, 1, 1, f) != 1) {
+                            fprintf(stderr, "load_wav: %s: short read on data\n", path);
+                            free(buf); fclose(f); return -1;
+                        }
+                        buf[i] = (int16_t)(((int16_t)u - 128) << 8);
+                    }
+                } else {
+                    uint8_t pair[2];
+                    for (size_t i = 0; i < mono_samples; i++) {
+                        if (fread(pair, 1, 2, f) != 2) {
+                            fprintf(stderr, "load_wav: %s: short read on stereo data\n", path);
+                            free(buf); fclose(f); return -1;
+                        }
+                        int16_t l = (int16_t)(((int16_t)pair[0] - 128) << 8);
+                        int16_t r = (int16_t)(((int16_t)pair[1] - 128) << 8);
+                        buf[i] = (int16_t)(((int32_t)l + (int32_t)r) / 2);
+                    }
                 }
             }
 
