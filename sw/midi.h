@@ -15,6 +15,5 @@ typedef struct {
 struct libusb_device_handle *midi_open(uint8_t *endpoint_out);
 int  midi_read(struct libusb_device_handle *midi, uint8_t endpoint, midi_event_t *evt);
 void midi_close(struct libusb_device_handle *midi);
-void midi_dump_log(void);
 
 #endif /* _MIDI_H */

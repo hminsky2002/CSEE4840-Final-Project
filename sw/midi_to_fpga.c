@@ -17,7 +17,6 @@ static void handle_sigint(int sig) {
         fpga_set_note_on(g_handle, 0);
         fpga_cleanup(g_handle);
     }
-    midi_dump_log();
     exit(0);
 }
 
@@ -112,13 +111,13 @@ int main() {
     while (1) {
         if (midi_read(midi_device, endpoint, &midi_packet) < 0) continue;
 
-        if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON ) {
-            uint16_t step_size = note_to_step_size(midi_packet.note);
-            fpga_set_step_size(&handle, step_size);
-            fpga_set_note_on(&handle, 1);
-        } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF
-                ) {
-            fpga_set_note_on(&handle, 0);
-        }
+        // if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON ) {
+        //     uint16_t step_size = note_to_step_size(midi_packet.note);
+        //     fpga_set_step_size(&handle, step_size);
+        //     fpga_set_note_on(&handle, 1);
+        // } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF
+        //         ) {
+        //     fpga_set_note_on(&handle, 0);
+        // }
     }
 }
