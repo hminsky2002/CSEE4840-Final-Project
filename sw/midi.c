@@ -21,17 +21,24 @@ struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
 int midi_read(struct libusb_device_handle *midi,
                 uint8_t endpoint_address,
                 midi_event_t *evt) {
-    uint8_t buf[4];
-    int transferred;
-    int r = libusb_bulk_transfer(midi, endpoint_address,
-        buf, sizeof(buf),
-        &transferred, 500000);
-    if (r < 0) return r;
+    static uint8_t buf[64];
+    static int transferred = 0;
+    static int pos = 0;
 
-    evt->cable      = buf[0];
-    evt->status     = buf[1];
-    evt->note       = buf[2];
-    evt->velocity   = buf[3];
+    if (pos + 4 > transferred) {
+        int r = libusb_bulk_transfer(midi, endpoint_address,
+            buf, sizeof(buf),
+            &transferred, 500000);
+        if (r < 0) { transferred = 0; pos = 0; return r; }
+        pos = 0;
+        if (transferred < 4) return -1;
+    }
+
+    evt->cable      = buf[pos + 0];
+    evt->status     = buf[pos + 1];
+    evt->note       = buf[pos + 2];
+    evt->velocity   = buf[pos + 3];
+    pos += 4;
 
     printf("%02x %02x %02x %02x\n",
         evt->cable,
@@ -40,7 +47,7 @@ int midi_read(struct libusb_device_handle *midi,
         evt->velocity
     );
 
-  return 0; 
+    return 0;
 }
 
 void midi_close(struct libusb_device_handle *midi) {
