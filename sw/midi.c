@@ -30,8 +30,7 @@ int midi_read(struct libusb_device_handle *midi,
             (unsigned char *)evt, sizeof(*evt),
             &transferred, 1000);
         if (r != 0) continue;
-        if (evt->status != 0x08 && evt->status != 0x09 &&
-            evt->status != 0x18 && evt->status != 0x19) continue;
+     
         break;
     }
 
