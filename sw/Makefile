@@ -10,18 +10,14 @@ endif
 
 # TARGET
 TARGET      = midi_to_fpga
-TEST_TARGET = test_bench
 
 # SOURCES
 SRCS = midi_to_fpga.c wavetable.c midi.c usbmidi.c
 OBJS = $(SRCS:.c=.o)
 DEPS = midi_to_fpga.h wavetable.h midi.h usbmidi.h oscillator.h
 
-TEST_SRCS = test_bench.c midi.c usbmidi.c
-TEST_OBJS = $(TEST_SRCS:.c=.o)
-
 # DEFAULT TARGET
-all: $(TARGET) $(TEST_TARGET)
+all: $(TARGET)
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -29,11 +25,8 @@ all: $(TARGET) $(TEST_TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
-$(TEST_TARGET): $(TEST_OBJS)
-	$(CC) $(CFLAGS) $(TEST_OBJS) -o $(TEST_TARGET) $(LDFLAGS)
-
 clean:
-	rm -f $(OBJS) $(TEST_OBJS) $(TARGET) $(TEST_TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 # PHONY TARGET
 .PHONY: all clean

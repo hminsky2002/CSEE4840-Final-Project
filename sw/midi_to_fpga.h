@@ -21,10 +21,10 @@
 #define TABLE_SIZE  2048
 #define SAMPLE_RATE 48000
 
-// MIDI constants
-#define MIDI_NOTE_ON      0x90
-#define MIDI_NOTE_OFF     0x80
-#define MIDI_STATUS_MASK  0xF0
+// MIDI constants (matched against the USB-MIDI CIN byte, not the MIDI status byte)
+#define MIDI_NOTE_ON      0x09
+#define MIDI_NOTE_OFF     0x08
+#define MIDI_STATUS_MASK  0x0F
 #define MIDI_CHANNEL_MASK 0x0F
 
 typedef struct {

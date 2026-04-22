@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #define MIDI_LOG_CAP 4096
 
@@ -27,24 +28,18 @@ struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
 int midi_read(struct libusb_device_handle *midi,
                 uint8_t endpoint_address,
                 midi_event_t *evt) {
-    static uint8_t buf[64];
-    static int transferred = 0;
-    static int pos = 0;
+    int transferred;
 
-    if (pos + 4 > transferred) {
+    for (;;) {
+        memset(evt, 0, sizeof(*evt));
         int r = libusb_bulk_transfer(midi, endpoint_address,
-            buf, sizeof(buf),
-            &transferred, 500000);
-        if (r < 0) { transferred = 0; pos = 0; return r; }
-        pos = 0;
-        if (transferred < 4) return -1;
+            (unsigned char *)evt, sizeof(*evt),
+            &transferred, 1000);
+        if (r != 0) continue;
+        if (evt->status != 0x08 && evt->status != 0x09 &&
+            evt->status != 0x18 && evt->status != 0x19) continue;
+        break;
     }
-
-    evt->cable      = buf[pos + 0];
-    evt->status     = buf[pos + 1];
-    evt->note       = buf[pos + 2];
-    evt->velocity   = buf[pos + 3];
-    pos += 4;
 
     midi_log[midi_log_count % MIDI_LOG_CAP] = *evt;
     midi_log_count++;
