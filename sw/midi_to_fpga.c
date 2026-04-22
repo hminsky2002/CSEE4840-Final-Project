@@ -17,6 +17,7 @@ static void handle_sigint(int sig) {
         fpga_set_note_on(g_handle, 0);
         fpga_cleanup(g_handle);
     }
+    midi_dump_log();
     exit(0);
 }
 
