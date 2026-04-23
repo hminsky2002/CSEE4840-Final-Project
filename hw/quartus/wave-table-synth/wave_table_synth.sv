@@ -43,15 +43,14 @@ module wave_table_synth (
     logic [14:0] bram_raddr;
     logic [15:0] bram_rdata;
 
-    /* Port A: HPS write */
+    /* Write + read in a single always_ff block so Quartus infers a
+     * true dual-port M10K. Splitting these into two blocks caused
+     * Quartus to infer two disjoint memories (silent bug: reads always
+     * returned 0). */
     always_ff @(posedge clk) begin
         if (chipselect && write && in_wavetable) begin
             wavetable_mem[address[14:0]] <= writedata;
         end
-    end
-
-    /* Port B: oscillator read (1-cycle synchronous read latency) */
-    always_ff @(posedge clk) begin
         bram_rdata <= wavetable_mem[bram_raddr];
     end
 
