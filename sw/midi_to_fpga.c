@@ -11,9 +11,10 @@
 #include "oscillator.h"
 #include "wavetable.h"
 
-static int16_t  *g_sample_buf = NULL;
-static size_t    g_sample_n   = 0;
-static uint32_t  g_sample_sr  = 0;
+static int16_t  *g_sample_buf  = NULL;
+static size_t    g_sample_n    = 0;
+static uint32_t  g_sample_sr   = 0;
+static uint16_t  g_sample_res  = 0;  /* log2(g_sample_n) after pow-2 trim */
 
 #define NUM_OSCILLATORS 32
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
@@ -53,6 +54,41 @@ uint16_t note_to_step_size(uint8_t note) {
 	return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
 }
 
+static uint32_t note_to_audio_step(uint8_t note) {
+    double frequency = 440.0 * pow(2.0, (note - 69) / 12.0);
+    return (uint32_t)((frequency * 4294967296.0) / SAMPLE_RATE);
+}
+
+#define SYNTH_SECONDS   10
+#define SYNTH_OUT_PATH  "out.wav"
+
+void *run_synth(void *arg) {
+    (void)arg;
+    size_t n_samples = (size_t)SYNTH_SECONDS * SAMPLE_RATE;
+    int16_t *out = malloc(n_samples * sizeof(int16_t));
+    if (!out) { perror("run_synth: malloc"); return NULL; }
+
+    for (size_t t = 0; t < n_samples; t++) {
+        int32_t mix = 0;
+        for (int j = 0; j < NUM_OSCILLATORS; j++) {
+            if (!oscillators[j].in_use) continue;
+            oscillators[j].phase += oscillators[j].audio_step;
+            uint16_t r = oscillators[j].resolution;
+            if (r == 0 || r > 32) continue;
+            size_t idx = oscillators[j].phase >> (32 - r);
+            mix += wavetable_read(idx);
+        }
+        if (mix > INT16_MAX) mix = INT16_MAX;
+        if (mix < INT16_MIN) mix = INT16_MIN;
+        out[t] = (int16_t)mix;
+    }
+
+    write_wav(SYNTH_OUT_PATH, out, n_samples, SAMPLE_RATE);
+    free(out);
+    printf("Wrote %zu samples to %s\n", n_samples, SYNTH_OUT_PATH);
+    return NULL;
+}
+
 void *run_midi_reciever(void *arg){
     fpga_handle_t *handle = (fpga_handle_t *)arg;
 
@@ -70,9 +106,12 @@ void *run_midi_reciever(void *arg){
                 int i = find_free_slot();
 
                 if (i >= 0) {
-                    oscillators[i].note      = midi_packet.note;
-                    oscillators[i].step_size = note_to_step_size(midi_packet.note);
-                    oscillators[i].in_use    = true;
+                    oscillators[i].note       = midi_packet.note;
+                    oscillators[i].step_size  = note_to_step_size(midi_packet.note);
+                    oscillators[i].resolution = g_sample_res;
+                    oscillators[i].audio_step = note_to_audio_step(midi_packet.note);
+                    oscillators[i].phase      = 0;
+                    oscillators[i].in_use     = true;
                 }
             }
 
@@ -98,16 +137,23 @@ int main(int argc, char **argv) {
     g_handle = &handle;
     signal(SIGINT, handle_sigint);
 
-    /* Optional WAV sample load (no hardware upload yet — address bus too narrow) */
-    if (argc >= 2) {
-        if (load_wav(argv[1], &g_sample_buf, &g_sample_n, &g_sample_sr) == 0) {
-            printf("Loaded %zu samples @ %u Hz from %s\n",
-                   g_sample_n, g_sample_sr, argv[1]);
-        }
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <wavfile>\n", argv[0]);
+        return 1;
     }
+    size_t raw_n;
+    if (load_wav(argv[1], &g_sample_buf, &raw_n, &g_sample_sr) != 0) {
+        return 1;
+    }
+    trim_to_pow2(raw_n, &g_sample_n, &g_sample_res);
+    printf("Loaded %zu samples @ %u Hz from %s (trimmed to %zu = 2^%u for looping)\n",
+           raw_n, g_sample_sr, argv[1], g_sample_n, g_sample_res);
+    wavetable_init(g_sample_buf, g_sample_n);
 
-    pthread_t midi_thread;
-    pthread_create(&midi_thread, NULL, run_midi_reciever, &handle);
-    pthread_join(midi_thread, NULL);
+    pthread_t midi_thread, synth_thread;
+    pthread_create(&midi_thread,  NULL, run_midi_reciever, &handle);
+    pthread_create(&synth_thread, NULL, run_synth,         NULL);
+
+    pthread_join(synth_thread, NULL);
     return 0;
 }

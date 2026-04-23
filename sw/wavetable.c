@@ -35,6 +35,83 @@ void save_wavetable_bin(int16_t *samples, int n, const char *path) {
     fclose(f);
 }
 
+int trim_to_pow2(size_t n, size_t *trimmed_n_out, uint16_t *resolution_out) {
+    if (n == 0) return -1;
+    uint16_t r = 0;
+    size_t p = 1;
+    while ((p << 1) <= n) { p <<= 1; r++; }
+    *trimmed_n_out = p;
+    *resolution_out = r;
+    return 0;
+}
+
+static int16_t *g_wavetable_mem = NULL;
+static size_t   g_wavetable_len = 0;
+
+int wavetable_init(const int16_t *src, size_t n) {
+    if (!src || n == 0) return -1;
+    free(g_wavetable_mem);
+    g_wavetable_mem = malloc(n * sizeof(int16_t));
+    if (!g_wavetable_mem) { perror("wavetable_init: malloc"); g_wavetable_len = 0; return -1; }
+    memcpy(g_wavetable_mem, src, n * sizeof(int16_t));
+    g_wavetable_len = n;
+    return 0;
+}
+
+int16_t wavetable_read(size_t index) {
+    if (!g_wavetable_mem || g_wavetable_len == 0) return 0;
+    return g_wavetable_mem[index % g_wavetable_len];
+}
+
+size_t wavetable_len(void) {
+    return g_wavetable_len;
+}
+
+static void write_u32_le(FILE *f, uint32_t v) {
+    uint8_t b[4] = { (uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24) };
+    fwrite(b, 1, 4, f);
+}
+
+static void write_u16_le(FILE *f, uint16_t v) {
+    uint8_t b[2] = { (uint8_t)v, (uint8_t)(v >> 8) };
+    fwrite(b, 1, 2, f);
+}
+
+int write_wav(const char *path,
+              const int16_t *samples,
+              size_t n_samples,
+              uint32_t sample_rate) {
+    FILE *f = fopen(path, "wb");
+    if (!f) { perror("write_wav: fopen"); return -1; }
+
+    uint32_t data_bytes = (uint32_t)(n_samples * sizeof(int16_t));
+    uint32_t riff_size  = 36 + data_bytes;
+
+    fwrite("RIFF", 1, 4, f);
+    write_u32_le(f, riff_size);
+    fwrite("WAVE", 1, 4, f);
+
+    fwrite("fmt ", 1, 4, f);
+    write_u32_le(f, 16);                    /* fmt chunk size */
+    write_u16_le(f, 1);                     /* PCM */
+    write_u16_le(f, 1);                     /* channels = mono */
+    write_u32_le(f, sample_rate);
+    write_u32_le(f, sample_rate * 2);       /* byte rate = SR * channels * bytes/sample */
+    write_u16_le(f, 2);                     /* block align = channels * bytes/sample */
+    write_u16_le(f, 16);                    /* bits per sample */
+
+    fwrite("data", 1, 4, f);
+    write_u32_le(f, data_bytes);
+
+    size_t written = fwrite(samples, sizeof(int16_t), n_samples, f);
+    fclose(f);
+    if (written != n_samples) {
+        fprintf(stderr, "write_wav: %s: only wrote %zu of %zu samples\n", path, written, n_samples);
+        return -1;
+    }
+    return 0;
+}
+
 static int read_u32_le(FILE *f, uint32_t *out) {
     uint8_t b[4];
     if (fread(b, 1, 4, f) != 4) return -1;
