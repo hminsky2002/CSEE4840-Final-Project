@@ -107,7 +107,7 @@ static int wave_synth_remove(struct platform_device *pdev) {
 
 #ifdef CONFIG_OF
 static const struct of_device_id wave_synth_of_match[] = {
-    { .compatible = "csee4840,wave_synth-1.0" },
+    { .compatible = "csee4840,wave_table_synth-1.0" },
     { },
 };
 MODULE_DEVICE_TABLE(of, wave_synth_of_match);
