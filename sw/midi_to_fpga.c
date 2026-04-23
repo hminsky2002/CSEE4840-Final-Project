@@ -56,70 +56,6 @@ uint16_t note_to_step_size(uint8_t note) {
     return (uint16_t)(rounded > 0xFFFFu ? 0xFFFFu : rounded);
 }
 
-#define NATIVE_NOTE 69   /* note at which the loaded WAV plays at original speed (A4) */
-
-static double note_to_audio_step(uint8_t note) {
-    return pow(2.0, ((double)note - NATIVE_NOTE) / 12.0);
-}
-
-#define SYNTH_SECONDS    10
-#define SYNTH_OUT_PATH   "out.wav"
-#define SYNTH_CHUNK_MS   10
-#define SYNTH_CHUNK_SAMP (SAMPLE_RATE / (1000 / SYNTH_CHUNK_MS))
-
-void *run_synth(void *arg) {
-    (void)arg;
-    size_t n_samples = (size_t)SYNTH_SECONDS * SAMPLE_RATE;
-    int16_t *out = malloc(n_samples * sizeof(int16_t));
-    if (!out) {
-        perror("run_synth: malloc");
-        return NULL;
-    }
-
-    struct timespec chunk_sleep = {0, SYNTH_CHUNK_MS * 1000L * 1000L};
-
-    for (size_t chunk_start = 0; chunk_start < n_samples; chunk_start += SYNTH_CHUNK_SAMP) {
-        size_t chunk_end = chunk_start + SYNTH_CHUNK_SAMP;
-        if (chunk_end > n_samples) {
-            chunk_end = n_samples;
-        }
-
-        for (size_t t = chunk_start; t < chunk_end; t++) {
-            int32_t mix = 0;
-            for (int j = 0; j < NUM_OSCILLATORS; j++) {
-                if (!oscillators[j].in_use) {
-                    continue;
-                }
-                int slot = oscillators[j].wavetable;
-                size_t slot_len = wavetable_len(slot);
-                if (slot_len == 0) {
-                    continue;
-                }
-                oscillators[j].phase += oscillators[j].audio_step;
-                while (oscillators[j].phase >= (double)slot_len) {
-                    oscillators[j].phase -= (double)slot_len;
-                }
-                size_t idx = (size_t)oscillators[j].phase;
-                mix += wavetable_read(slot, idx);
-            }
-            if (mix > INT16_MAX) {
-                mix = INT16_MAX;
-            }
-            if (mix < INT16_MIN) {
-                mix = INT16_MIN;
-            }
-            out[t] = (int16_t)mix;
-        }
-
-        nanosleep(&chunk_sleep, NULL);
-    }
-
-    write_wav(SYNTH_OUT_PATH, out, n_samples, SAMPLE_RATE);
-    free(out);
-    printf("Wrote %zu samples to %s\n", n_samples, SYNTH_OUT_PATH);
-    return NULL;
-}
-
 void *run_midi_reciever(void *arg){
     fpga_handle_t *handle = (fpga_handle_t *)arg;
 
@@ -140,12 +76,10 @@ void *run_midi_reciever(void *arg){
 
                 if (i >= 0) {
                     uint16_t step = note_to_step_size(midi_packet.note);
-                    oscillators[i].note       = midi_packet.note;
-                    oscillators[i].step_size  = step;
-                    oscillators[i].wavetable  = g_current_wavetable;
-                    oscillators[i].audio_step = note_to_audio_step(midi_packet.note);
-                    oscillators[i].phase      = 0;
-                    oscillators[i].in_use     = true;
+                    oscillators[i].note      = midi_packet.note;
+                    oscillators[i].step_size = step;
+                    oscillators[i].wavetable = g_current_wavetable;
+                    oscillators[i].in_use    = true;
 
                     fpga_voice_start(handle, i, step, g_current_wavetable);
                 }
@@ -246,12 +180,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "No wavetables loaded from %s\n", argv[1]);
         return 1;
     }
-    printf("Loaded %d wavetable slot(s). Starting synth.\n", loaded);
+    printf("Loaded %d wavetable slot(s). Listening for MIDI.\n", loaded);
 
-    pthread_t midi_thread, synth_thread;
-    pthread_create(&midi_thread,  NULL, run_midi_reciever, &handle);
-    pthread_create(&synth_thread, NULL, run_synth,         NULL);
-
-    pthread_join(synth_thread, NULL);
+    pthread_t midi_thread;
+    pthread_create(&midi_thread, NULL, run_midi_reciever, &handle);
+    pthread_join(midi_thread, NULL);   /* runs forever; exit via SIGINT */
     return 0;
 }
