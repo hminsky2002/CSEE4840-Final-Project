@@ -24,7 +24,7 @@ int load_wav(const char *path,
              size_t   *n_samples_out,
              uint32_t *sample_rate_out);
 
-#define MAX_WAVETABLE_SLOTS 16
+#define MAX_WAVETABLE_SLOTS 4
 
 /* Copy src into the given slot, replacing any previous contents. 0 on success. */
 int     wavetable_load(int slot, const int16_t *src, size_t n);

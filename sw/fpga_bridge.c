@@ -86,7 +86,7 @@ void fpga_all_voices_off(fpga_handle_t *handle) {
 
 int fpga_load_slot(fpga_handle_t *handle, int slot,
                    const int16_t *samples, int n) {
-    if (slot < 0 || slot >= 16) return -1;
+    if (slot < 0 || slot >= NUM_TABLE_SLOTS) return -1;
     if (!samples || n <= 0) return -1;
     if (n > TABLE_SIZE) n = TABLE_SIZE;
 

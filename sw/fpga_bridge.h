@@ -12,8 +12,11 @@
 #define OSC_TABLE(v)  (0x8000u + (v) * 4u + 2u)
 #define AMP_CTRL      0x8080u
 
-/* Wavetable slot base (word offset). Each slot is 2048 samples. */
-#define WAVETABLE_WORD(slot, sample)  (((slot) * 2048u) + (sample))
+#define TABLE_SIZE         8192
+#define NUM_TABLE_SLOTS    4
+
+/* Wavetable slot base (word offset). Each slot is TABLE_SIZE samples. */
+#define WAVETABLE_WORD(slot, sample)  (((slot) * TABLE_SIZE) + (sample))
 
 /* 2-bit ctrl encoding per oscillator. */
 #define CTRL_IDLE   0x0000u
@@ -21,7 +24,6 @@
 #define CTRL_START  0x0002u
 #define CTRL_RESET  0x0003u
 
-#define TABLE_SIZE   2048
 #define SAMPLE_RATE  48000
 #define NUM_VOICES   32
 

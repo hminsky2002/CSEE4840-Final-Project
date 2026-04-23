@@ -24,8 +24,8 @@
 #define OSC_TABLE(v)  (0x8000u + (v) * 4u + 2u)
 #define AMP_CTRL      0x8080u
 
-/* Wavetable slot base (word offset). Each slot is 2048 samples. */
-#define WAVETABLE_WORD(slot, sample)  (((slot) * 2048u) + (sample))
+/* Wavetable slot base (word offset). Each slot is 8192 samples. */
+#define WAVETABLE_WORD(slot, sample)  (((slot) * 8192u) + (sample))
 
 /* Control register values. */
 #define CTRL_STOP   0x0001u
@@ -48,10 +48,10 @@ int main(void) {
         return 1;
     }
 
-    /* 1. Load a recognizable sawtooth into slot 0. */
+    /* 1. Load a recognizable sawtooth into slot 0 (8192 samples). */
     printf("writing sawtooth into wavetable slot 0...\n");
-    for (int i = 0; i < 2048; i++) {
-        int32_t s = (int32_t)i * 32 - 32768;  /* -32768 .. +32736 */
+    for (int i = 0; i < 8192; i++) {
+        int32_t s = (int32_t)i * 8 - 32768;  /* -32768 .. +32760 */
         regs[WAVETABLE_WORD(0, i)] = (uint16_t)(int16_t)s;
     }
 

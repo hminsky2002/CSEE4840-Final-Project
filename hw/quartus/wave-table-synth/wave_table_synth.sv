@@ -2,14 +2,14 @@
  * Top-level WaveSURFER peripheral.
  *
  * Avalon-MM slave: 17-bit word address (256 KB byte window)
- *   Word addr 0x00000 - 0x07FFF : wavetable BRAM  (16 slots x 2048 x 16-bit)
+ *   Word addr 0x00000 - 0x07FFF : wavetable BRAM  (4 slots x 8192 x 16-bit)
  *   Word addr 0x08000 - 0x0807F : per-oscillator control file (32 x 4 words)
  *   Word addr 0x08080           : AMP_CTRL (low 7 bits used)
  *
  * Per-oscillator register layout (4 words = 8 bytes, word-addressed):
  *   +0 step_size      (16-bit, Q11.5 fixed-point)
  *   +1 control        (low 2 bits: 01=stop, 10=start, 11=reset)
- *   +2 table_index    (low 4 bits: which of 16 slots)
+ *   +2 table_index    (low 2 bits: which of 4 slots)
  *   +3 reserved
  *
  * Avalon-ST audio source out: one mixed sample per codec sample window.
@@ -57,7 +57,7 @@ module wave_table_synth (
     /* ---------------- Per-oscillator control registers ---------------- */
     logic [15:0] step_size_reg [0:31];
     logic [1:0]  ctrl_reg      [0:31];
-    logic [3:0]  table_sel_reg [0:31];
+    logic [1:0]  table_sel_reg [0:31];
     logic [6:0]  amp_ctrl_reg;
 
     always_ff @(posedge clk) begin
@@ -65,7 +65,7 @@ module wave_table_synth (
             for (int i = 0; i < 32; i++) begin
                 step_size_reg[i] <= 16'h0;
                 ctrl_reg[i]      <= 2'b00;
-                table_sel_reg[i] <= 4'h0;
+                table_sel_reg[i] <= 2'h0;
             end
             amp_ctrl_reg <= 7'h0;
         end else if (chipselect && write) begin
@@ -73,7 +73,7 @@ module wave_table_synth (
                 case (reg_addr)
                     2'd0: step_size_reg[voice_addr] <= writedata;
                     2'd1: ctrl_reg[voice_addr]      <= writedata[1:0];
-                    2'd2: table_sel_reg[voice_addr] <= writedata[3:0];
+                    2'd2: table_sel_reg[voice_addr] <= writedata[1:0];
                     2'd3: ; /* reserved */
                 endcase
             end else if (in_amp_ctrl) begin
