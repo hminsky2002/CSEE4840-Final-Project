@@ -85,23 +85,25 @@ module wave_table_synth (
     assign readdata = 16'h0;
 
     /* ---------------- Sample-tick generator ----------------
-     * Free-running 50 MHz -> ~48.03 kHz divider (slightly faster than
-     * the codec's 48 kHz). The sink backpressures us via sample_pending
-     * so we don't overwrite a sample that hasn't been accepted yet; the
-     * audio IP's FIFO paces us to exactly 48 kHz on average.
+     * Pull-driven: start a sweep only when the Avalon-ST sink says it
+     * wants a sample. Matches the pacing model on load-wavetable-in.
+     * Deadlock-proof — if the sink stops asserting ready, we simply
+     * stop producing, instead of getting stuck holding sample_valid.
      */
-    localparam int SAMPLE_DIV = 1041;  // 50_000_000 / 1041 = 48031.7 Hz
-    logic [10:0] tick_cnt;
+    wire sink_ready = ready_left & ready_right;
+
+    logic sweep_in_flight;
     always_ff @(posedge clk) begin
         if (reset) begin
-            tick_cnt <= 11'd0;
-        end else if (tick_cnt == SAMPLE_DIV - 1) begin
-            tick_cnt <= 11'd0;
-        end else begin
-            tick_cnt <= tick_cnt + 11'd1;
+            sweep_in_flight <= 1'b0;
+        end else if (sample_tick) begin
+            sweep_in_flight <= 1'b1;
+        end else if (sweep_done) begin
+            sweep_in_flight <= 1'b0;
         end
     end
-    wire sample_tick = (tick_cnt == SAMPLE_DIV - 1) && !sample_pending;
+
+    wire sample_tick = sink_ready && !sweep_in_flight && !sample_valid;
 
     /* ---------------- Oscillator TDM bank ---------------- */
     logic [15:0] voice_sample;
@@ -151,20 +153,18 @@ module wave_table_synth (
     end
 
     /* ---------------- Avalon-ST handshake ----------------
-     * Raise sample_pending when the mixer latches a new sample; drop it
-     * the cycle the sink accepts it (valid && ready_left && ready_right).
-     * This produces exactly one valid assertion per mixed sample.
+     * sample_valid pulses high for one cycle on the cycle where the
+     * latched sample is first visible (the cycle after sweep_done).
+     * Because the sweep was started only when sink_ready was high and
+     * a sweep takes ~34 cycles, the codec's FIFO is near-certain to
+     * still be accepting when the pulse lands.
      */
-    logic sample_pending;
     always_ff @(posedge clk) begin
         if (reset) begin
-            sample_pending <= 1'b0;
-        end else if (sweep_done) begin
-            sample_pending <= 1'b1;
-        end else if (sample_pending && ready_left && ready_right) begin
-            sample_pending <= 1'b0;
+            sample_valid <= 1'b0;
+        end else begin
+            sample_valid <= sweep_done;
         end
     end
-    assign sample_valid = sample_pending;
 
 endmodule
