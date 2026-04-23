@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <math.h>
 #include <pthread.h>
+#include <time.h>
 #include "midi.h"
 #include "midi_to_fpga.h"
 #include "fpga_bridge.h"
@@ -54,33 +55,47 @@ uint16_t note_to_step_size(uint8_t note) {
 	return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
 }
 
-static uint32_t note_to_audio_step(uint8_t note) {
-    double frequency = 440.0 * pow(2.0, (note - 69) / 12.0);
-    return (uint32_t)((frequency * 4294967296.0) / SAMPLE_RATE);
+#define NATIVE_NOTE 69   /* note at which the loaded WAV plays at original speed (A4) */
+
+static double note_to_audio_step(uint8_t note) {
+    return pow(2.0, ((double)note - NATIVE_NOTE) / 12.0);
 }
 
-#define SYNTH_SECONDS   10
-#define SYNTH_OUT_PATH  "out.wav"
+#define SYNTH_SECONDS    10
+#define SYNTH_OUT_PATH   "out.wav"
+#define SYNTH_CHUNK_MS   10
+#define SYNTH_CHUNK_SAMP (SAMPLE_RATE / (1000 / SYNTH_CHUNK_MS))
 
 void *run_synth(void *arg) {
     (void)arg;
     size_t n_samples = (size_t)SYNTH_SECONDS * SAMPLE_RATE;
+    size_t wt_len    = wavetable_len();
     int16_t *out = malloc(n_samples * sizeof(int16_t));
     if (!out) { perror("run_synth: malloc"); return NULL; }
 
-    for (size_t t = 0; t < n_samples; t++) {
-        int32_t mix = 0;
-        for (int j = 0; j < NUM_OSCILLATORS; j++) {
-            if (!oscillators[j].in_use) continue;
-            oscillators[j].phase += oscillators[j].audio_step;
-            uint16_t r = oscillators[j].resolution;
-            if (r == 0 || r > 32) continue;
-            size_t idx = oscillators[j].phase >> (32 - r);
-            mix += wavetable_read(idx);
+    struct timespec chunk_sleep = {0, SYNTH_CHUNK_MS * 1000L * 1000L};
+
+    for (size_t chunk_start = 0; chunk_start < n_samples; chunk_start += SYNTH_CHUNK_SAMP) {
+        size_t chunk_end = chunk_start + SYNTH_CHUNK_SAMP;
+        if (chunk_end > n_samples) chunk_end = n_samples;
+
+        for (size_t t = chunk_start; t < chunk_end; t++) {
+            int32_t mix = 0;
+            for (int j = 0; j < NUM_OSCILLATORS; j++) {
+                if (!oscillators[j].in_use || wt_len == 0) continue;
+                oscillators[j].phase += oscillators[j].audio_step;
+                while (oscillators[j].phase >= (double)wt_len) {
+                    oscillators[j].phase -= (double)wt_len;
+                }
+                size_t idx = (size_t)oscillators[j].phase;
+                mix += wavetable_read(idx);
+            }
+            if (mix > INT16_MAX) mix = INT16_MAX;
+            if (mix < INT16_MIN) mix = INT16_MIN;
+            out[t] = (int16_t)mix;
         }
-        if (mix > INT16_MAX) mix = INT16_MAX;
-        if (mix < INT16_MIN) mix = INT16_MIN;
-        out[t] = (int16_t)mix;
+
+        nanosleep(&chunk_sleep, NULL);
     }
 
     write_wav(SYNTH_OUT_PATH, out, n_samples, SAMPLE_RATE);
