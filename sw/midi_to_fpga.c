@@ -44,6 +44,18 @@ static fpga_handle_t *g_handle = NULL;
  * got dropped or came in on a different note than the NOTE_ON. */
 #define PANIC_NOTE 0x33
 
+/* CC number of the pitch dial on the controller. Value 64 is the "center"
+ * (no pitch change); 0 bends down one octave, 127 bends up one octave. */
+#define CC_PITCH_DIAL 8
+static double g_pitch_ratio = 1.0;   /* multiplier applied to every step_size */
+
+static uint16_t apply_pitch(uint16_t base_step) {
+    double scaled = (double)base_step * g_pitch_ratio;
+    if (scaled < 1.0) return 1;
+    if (scaled > 0xFFFFu) return 0xFFFFu;
+    return (uint16_t)(scaled + 0.5);
+}
+
 static void panic_all_voices(fpga_handle_t *handle) {
     fpga_all_voices_off(handle);
     for (int i = 0; i < NUM_OSCILLATORS; i++) {
@@ -99,7 +111,7 @@ void *run_midi_reciever(void *arg){
                     oscillators[i].wavetable = g_current_wavetable;
                     oscillators[i].in_use    = true;
 
-                    fpga_voice_start(handle, i, step, g_current_wavetable);
+                    fpga_voice_start(handle, i, apply_pitch(step), g_current_wavetable);
                 }
             }
 
@@ -109,6 +121,20 @@ void *run_midi_reciever(void *arg){
             if (i >= 0) {
                 oscillators[i].in_use = false;
                 fpga_voice_stop(handle, i);
+            }
+
+        } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
+            if (midi_packet.note == CC_PITCH_DIAL) {
+                /* Map dial [0..127] to pitch multiplier [0.5x .. 2x]
+                 * around center 64 (one octave either direction). */
+                int dial = midi_packet.attack;
+                g_pitch_ratio = pow(2.0, ((double)dial - 64.0) / 64.0);
+                for (int i = 0; i < NUM_OSCILLATORS; i++) {
+                    if (oscillators[i].in_use) {
+                        fpga_set_step(handle, i,
+                                      apply_pitch(oscillators[i].step_size));
+                    }
+                }
             }
 
         } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PROGRAM_CHANGE) {
