@@ -39,6 +39,20 @@ static int find_free_slot(void) {
 
 static fpga_handle_t *g_handle = NULL;
 
+/* Hitting this key on the controller force-mutes every voice and clears
+ * allocator state — useful when a stuck note happens because a NOTE_OFF
+ * got dropped or came in on a different note than the NOTE_ON. */
+#define PANIC_NOTE 0x33
+
+static void panic_all_voices(fpga_handle_t *handle) {
+    fpga_all_voices_off(handle);
+    for (int i = 0; i < NUM_OSCILLATORS; i++) {
+        oscillators[i].in_use = false;
+        oscillators[i].note   = 0;
+    }
+    printf("PANIC: all voices cleared\n");
+}
+
 static void handle_sigint(int sig) {
     (void)sig;
     if (g_handle) {
@@ -71,6 +85,10 @@ void *run_midi_reciever(void *arg){
         }
 
         if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON) {
+            if (midi_packet.note == PANIC_NOTE) {
+                panic_all_voices(handle);
+                continue;
+            }
             if (find_note_slot(midi_packet.note) == -1) {
                 int i = find_free_slot();
 
