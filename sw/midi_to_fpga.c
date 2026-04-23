@@ -156,13 +156,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage: %s <wavfile>\n", argv[0]);
         return 1;
     }
-    size_t raw_n;
-    if (load_wav(argv[1], &g_sample_buf, &raw_n, &g_sample_sr) != 0) {
+    if (load_wav(argv[1], &g_sample_buf, &g_sample_n, &g_sample_sr) != 0) {
         return 1;
     }
-    trim_to_pow2(raw_n, &g_sample_n, &g_sample_res);
-    printf("Loaded %zu samples @ %u Hz from %s (trimmed to %zu = 2^%u for looping)\n",
-           raw_n, g_sample_sr, argv[1], g_sample_n, g_sample_res);
+    printf("Loaded %zu samples @ %u Hz from %s\n", g_sample_n, g_sample_sr, argv[1]);
     wavetable_init(g_sample_buf, g_sample_n);
 
     pthread_t midi_thread, synth_thread;
