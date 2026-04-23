@@ -13,7 +13,7 @@
 #include "oscillator.h"
 #include "wavetable.h"
 
-#define NUM_OSCILLATORS 32
+#define NUM_OSCILLATORS NUM_VOICES
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
 /* Which wavetable slot new note-ons use (updated by Program Change). */
@@ -37,30 +37,23 @@ static int find_free_slot(void) {
     return -1;
 }
 
-static int any_active(void) {
-    for (int i = 0; i < NUM_OSCILLATORS; i++) {
-        if (oscillators[i].in_use) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 static fpga_handle_t *g_handle = NULL;
 
 static void handle_sigint(int sig) {
     (void)sig;
     if (g_handle) {
-        fpga_set_note_on(g_handle, 0);
-        fpga_cleanup(g_handle);
+        fpga_cleanup(g_handle);   /* also mutes every voice */
     }
     exit(0);
 }
 
+/* Phase is 24-bit; the hardware left-shifts step_size by 8 before adding.
+ * So we hand it step = round(freq * 65536 / 48000). A4 (MIDI 69) = 601. */
 uint16_t note_to_step_size(uint8_t note) {
-    double frequency = 440.0 * pow(2.0, (note - 69) / 12.0);
-    uint32_t step = (uint32_t)((frequency * TABLE_SIZE) / SAMPLE_RATE);
-    return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
+    double frequency = 440.0 * pow(2.0, ((double)note - 69.0) / 12.0);
+    double step = frequency * 65536.0 / (double)SAMPLE_RATE;
+    uint32_t rounded = (uint32_t)(step + 0.5);
+    return (uint16_t)(rounded > 0xFFFFu ? 0xFFFFu : rounded);
 }
 
 #define NATIVE_NOTE 69   /* note at which the loaded WAV plays at original speed (A4) */
@@ -146,27 +139,25 @@ void *run_midi_reciever(void *arg){
                 int i = find_free_slot();
 
                 if (i >= 0) {
+                    uint16_t step = note_to_step_size(midi_packet.note);
                     oscillators[i].note       = midi_packet.note;
-                    oscillators[i].step_size  = note_to_step_size(midi_packet.note);
+                    oscillators[i].step_size  = step;
                     oscillators[i].wavetable  = g_current_wavetable;
                     oscillators[i].audio_step = note_to_audio_step(midi_packet.note);
                     oscillators[i].phase      = 0;
                     oscillators[i].in_use     = true;
+
+                    fpga_voice_start(handle, i, step, g_current_wavetable);
                 }
             }
-
-            fpga_set_step_size(handle, note_to_step_size(midi_packet.note));
-
-            fpga_set_note_on(handle, 1);
 
         } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
             int i = find_note_slot(midi_packet.note);
 
             if (i >= 0) {
                 oscillators[i].in_use = false;
+                fpga_voice_stop(handle, i);
             }
-
-            fpga_set_note_on(handle, any_active() ? 1 : 0);
 
         } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PROGRAM_CHANGE) {
             /* Program Change: program number is in midi_packet.note (byte 2).
@@ -176,6 +167,9 @@ void *run_midi_reciever(void *arg){
                 g_current_wavetable = program;
                 for (int i = 0; i < NUM_OSCILLATORS; i++) {
                     oscillators[i].wavetable = program;
+                    if (oscillators[i].in_use) {
+                        fpga_set_table(handle, i, program);
+                    }
                 }
                 printf("Program change -> slot %u\n", program);
             }
@@ -186,7 +180,7 @@ void *run_midi_reciever(void *arg){
 
 /* Load a manifest: one WAV path per line. Blank lines and `#`-comments skipped.
  * Returns number of slots successfully loaded. */
-static int load_manifest(const char *path) {
+static int load_manifest(const char *path, fpga_handle_t *handle) {
     FILE *f = fopen(path, "r");
     if (!f) {
         perror("load_manifest: fopen");
@@ -206,6 +200,8 @@ static int load_manifest(const char *path) {
             continue;
         }
         if (wavetable_load(slot, samples, n) == 0) {
+            int push_n = (n > TABLE_SIZE) ? TABLE_SIZE : (int)n;
+            fpga_load_slot(handle, slot, samples, push_n);
             printf("slot %d: %zu samples @ %u Hz from %s\n", slot, n, sr, line);
             slot++;
         }
@@ -233,7 +229,9 @@ static void run_debug_print(void) {
 int main(int argc, char **argv) {
     /* mmap at startup */
     fpga_handle_t handle;
-    fpga_init(&handle);
+    if (fpga_init(&handle) != 0) {
+        return 1;
+    }
     g_handle = &handle;
     signal(SIGINT, handle_sigint);
 
@@ -243,7 +241,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    int loaded = load_manifest(argv[1]);
+    int loaded = load_manifest(argv[1], &handle);
     if (loaded <= 0) {
         fprintf(stderr, "No wavetables loaded from %s\n", argv[1]);
         return 1;

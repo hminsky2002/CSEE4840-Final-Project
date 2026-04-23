@@ -3,37 +3,51 @@
 
 #include <stdint.h>
 
-// Lightweight HPS-to-FPGA bridge base address (fixed on Cyclone V)
-#define LW_BRIDGE_BASE 0xFF200000
-#define LW_BRIDGE_SPAN 0x00200000
+/* 256 KB peripheral window: wavetable BRAM + 32 voices + amp_ctrl. */
+#define WAVE_SYNTH_WIN_BYTES 0x40000
 
-// Peripheral base: 0x0010 bytes from LW bridge base → 0x08 uint16_t words
-// (confirmed via soc_system.qsys baseAddress = 0x0010)
-#define SYNTH_BASE_WORD_OFFSET  0x08
+/* Word offsets (into a uint16_t *). */
+#define OSC_STEP(v)   (0x8000u + (v) * 4u + 0u)
+#define OSC_CTRL(v)   (0x8000u + (v) * 4u + 1u)
+#define OSC_TABLE(v)  (0x8000u + (v) * 4u + 2u)
+#define AMP_CTRL      0x8080u
 
-// Register map (16-bit word offsets into lw_bridge pointer)
-// Byte address = 0xFF200000 + offset * 2
-#define NOTE_ON_OFFSET    (SYNTH_BASE_WORD_OFFSET + 0)
-#define STEP_SIZE_OFFSET  (SYNTH_BASE_WORD_OFFSET + 1)
-#define VELOCITY_OFFSET   (SYNTH_BASE_WORD_OFFSET + 2)
-#define WAVETABLE_OFFSET  (SYNTH_BASE_WORD_OFFSET + 3)
+/* Wavetable slot base (word offset). Each slot is 2048 samples. */
+#define WAVETABLE_WORD(slot, sample)  (((slot) * 2048u) + (sample))
 
-#define TABLE_SIZE  2048
-#define SAMPLE_RATE 48000
+/* 2-bit ctrl encoding per oscillator. */
+#define CTRL_IDLE   0x0000u
+#define CTRL_STOP   0x0001u
+#define CTRL_START  0x0002u
+#define CTRL_RESET  0x0003u
+
+#define TABLE_SIZE   2048
+#define SAMPLE_RATE  48000
+#define NUM_VOICES   32
 
 typedef struct {
-    volatile uint16_t *lw_bridge;
-    int mem_fd;
+    volatile uint16_t *regs;   /* mmap'd peripheral window */
+    int                fd;
 } fpga_handle_t;
 
 int  fpga_init(fpga_handle_t *handle);
 void fpga_cleanup(fpga_handle_t *handle);
 
-void fpga_set_note_on(fpga_handle_t *handle, uint8_t on);
-void fpga_set_step_size(fpga_handle_t *handle, uint16_t step_size);
-void fpga_set_velocity(fpga_handle_t *handle, uint8_t velocity);
+/* Raw per-voice register writes. */
+void fpga_set_step(fpga_handle_t *handle, int voice, uint16_t step_size);
+void fpga_set_ctrl(fpga_handle_t *handle, int voice, uint16_t ctrl);
+void fpga_set_table(fpga_handle_t *handle, int voice, uint16_t slot);
 
-int write_wavetable_to_fpga(fpga_handle_t *handle, const int16_t *samples, int n);
-int load_wavetable(fpga_handle_t *handle, const char *filepath);
+/* Convenience: configure a voice and start it from a clean phase. */
+void fpga_voice_start(fpga_handle_t *handle, int voice,
+                      uint16_t step_size, uint16_t slot);
+/* Stop a voice (phase held, output muted). */
+void fpga_voice_stop(fpga_handle_t *handle, int voice);
+/* Stop every voice (used on shutdown). */
+void fpga_all_voices_off(fpga_handle_t *handle);
+
+/* Copy up to TABLE_SIZE samples into the given wavetable slot. */
+int  fpga_load_slot(fpga_handle_t *handle, int slot,
+                    const int16_t *samples, int n);
 
 #endif /* FPGA_BRIDGE_H */
