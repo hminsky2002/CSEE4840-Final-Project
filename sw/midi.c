@@ -89,7 +89,7 @@ int midi_read(struct libusb_device_handle *midi,
               uint8_t endpoint_address,
               midi_event_t *evt) {
     int transferred;
-    struct midi_event_t buf[4];
+    struct midi_event_t buf[4] = {0};
 
     for (;;) {
         memset(evt, 0, sizeof(*evt));
