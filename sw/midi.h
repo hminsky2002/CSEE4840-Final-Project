@@ -9,7 +9,6 @@ typedef struct {
     uint8_t not_sure;
     uint8_t note;
     uint8_t attack;
-    uint8_t other_data[60];
 } midi_event_t;
 
 struct libusb_device_handle *midi_open(uint8_t *endpoint_out);
