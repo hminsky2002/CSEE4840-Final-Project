@@ -85,32 +85,26 @@ struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
     libusb_free_device_list(devs, 1);
     return midi;
 }
-
 int midi_read(struct libusb_device_handle *midi,
               uint8_t endpoint_address,
               midi_event_t *evt) {
-    unsigned char buf[64];  // wMaxPacketSize for USB MIDI 1.0 bulk endpoints
     int transferred;
 
     for (;;) {
-        transferred = 0;
+        memset(evt, 0, sizeof(*evt));
         int r = libusb_bulk_transfer(midi, endpoint_address,
-                                     buf, sizeof(buf),
+                                     (unsigned char *)evt, sizeof(*evt),
                                      &transferred, 1000);
         if (r != 0) {
             continue;
         }
-        if (transferred < (int)sizeof(*evt)) {
-            continue;  // nothing useful arrived
+        if (transferred < 4) {
+            continue;  
         }
         break;
     }
 
     printf("transferred %d bytes\n", transferred);
-
-    // Only hand back the first 4-byte event packet
-    memcpy(evt, buf, sizeof(*evt));
-
     printf("%02x %02x %02x %02x\n",
            evt->status,
            evt->not_sure,
