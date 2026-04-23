@@ -86,11 +86,12 @@ module wave_table_synth (
     assign readdata = 16'h0;
 
     /* ---------------- Sample-tick generator ----------------
-     * Free-running 50 MHz -> ~48 kHz divider. Independent of the audio
-     * IP's ready backpressure so the mixer advances at a steady audio
-     * rate; ready_left/ready_right are only used to gate sample_valid.
+     * Free-running 50 MHz -> ~48.03 kHz divider (slightly faster than
+     * the codec's 48 kHz). The sink backpressures us via sample_pending
+     * so we don't overwrite a sample that hasn't been accepted yet; the
+     * audio IP's FIFO paces us to exactly 48 kHz on average.
      */
-    localparam int SAMPLE_DIV = 1042;  // 50_000_000 / 48_000 ~= 1042
+    localparam int SAMPLE_DIV = 1041;  // 50_000_000 / 1041 = 48031.7 Hz
     logic [10:0] tick_cnt;
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -101,7 +102,7 @@ module wave_table_synth (
             tick_cnt <= tick_cnt + 11'd1;
         end
     end
-    wire sample_tick = (tick_cnt == SAMPLE_DIV - 1);
+    wire sample_tick = (tick_cnt == SAMPLE_DIV - 1) && !sample_pending;
 
     /* ---------------- Oscillator TDM bank ---------------- */
     logic [15:0] voice_sample;
