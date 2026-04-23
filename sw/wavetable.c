@@ -35,36 +35,45 @@ void save_wavetable_bin(int16_t *samples, int n, const char *path) {
     fclose(f);
 }
 
-int trim_to_pow2(size_t n, size_t *trimmed_n_out, uint16_t *resolution_out) {
-    if (n == 0) return -1;
-    uint16_t r = 0;
-    size_t p = 1;
-    while ((p << 1) <= n) { p <<= 1; r++; }
-    *trimmed_n_out = p;
-    *resolution_out = r;
+static struct {
+    int16_t *samples;
+    size_t   len;
+} g_slots[MAX_WAVETABLE_SLOTS] = {{0}};
+
+int wavetable_load(int slot, const int16_t *src, size_t n) {
+    if (slot < 0 || slot >= MAX_WAVETABLE_SLOTS) {
+        return -1;
+    }
+    if (!src || n == 0) {
+        return -1;
+    }
+    free(g_slots[slot].samples);
+    g_slots[slot].samples = malloc(n * sizeof(int16_t));
+    if (!g_slots[slot].samples) {
+        perror("wavetable_load: malloc");
+        g_slots[slot].len = 0;
+        return -1;
+    }
+    memcpy(g_slots[slot].samples, src, n * sizeof(int16_t));
+    g_slots[slot].len = n;
     return 0;
 }
 
-static int16_t *g_wavetable_mem = NULL;
-static size_t   g_wavetable_len = 0;
-
-int wavetable_init(const int16_t *src, size_t n) {
-    if (!src || n == 0) return -1;
-    free(g_wavetable_mem);
-    g_wavetable_mem = malloc(n * sizeof(int16_t));
-    if (!g_wavetable_mem) { perror("wavetable_init: malloc"); g_wavetable_len = 0; return -1; }
-    memcpy(g_wavetable_mem, src, n * sizeof(int16_t));
-    g_wavetable_len = n;
-    return 0;
+int16_t wavetable_read(int slot, size_t index) {
+    if (slot < 0 || slot >= MAX_WAVETABLE_SLOTS) {
+        return 0;
+    }
+    if (!g_slots[slot].samples || g_slots[slot].len == 0) {
+        return 0;
+    }
+    return g_slots[slot].samples[index % g_slots[slot].len];
 }
 
-int16_t wavetable_read(size_t index) {
-    if (!g_wavetable_mem || g_wavetable_len == 0) return 0;
-    return g_wavetable_mem[index % g_wavetable_len];
-}
-
-size_t wavetable_len(void) {
-    return g_wavetable_len;
+size_t wavetable_len(int slot) {
+    if (slot < 0 || slot >= MAX_WAVETABLE_SLOTS) {
+        return 0;
+    }
+    return g_slots[slot].len;
 }
 
 static void write_u32_le(FILE *f, uint32_t v) {
@@ -173,8 +182,12 @@ int load_wav(const char *path,
                 fclose(f); return -1;
             }
             (void)byte_rate; (void)block_align;
-            if (size > 16) fseek(f, size - 16, SEEK_CUR);
-            if (size & 1) fseek(f, 1, SEEK_CUR);
+            if (size > 16) {
+                fseek(f, size - 16, SEEK_CUR);
+            }
+            if (size & 1) {
+                fseek(f, 1, SEEK_CUR);
+            }
             have_fmt = 1;
         } else if (memcmp(id, "data", 4) == 0) {
             if (!have_fmt) {

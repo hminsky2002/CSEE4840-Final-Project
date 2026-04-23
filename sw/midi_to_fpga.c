@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include <signal.h>
 #include <math.h>
 #include <pthread.h>
@@ -12,29 +13,36 @@
 #include "oscillator.h"
 #include "wavetable.h"
 
-static int16_t  *g_sample_buf  = NULL;
-static size_t    g_sample_n    = 0;
-static uint32_t  g_sample_sr   = 0;
-static uint16_t  g_sample_res  = 0;  /* log2(g_sample_n) after pow-2 trim */
-
 #define NUM_OSCILLATORS 32
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
+/* Which wavetable slot new note-ons use (updated by Program Change). */
+static uint16_t g_current_wavetable = 0;
+
 static int find_note_slot(uint8_t note) {
-    for (int i = 0; i < NUM_OSCILLATORS; i++)
-        if (oscillators[i].in_use && oscillators[i].note == note) return i;
+    for (int i = 0; i < NUM_OSCILLATORS; i++) {
+        if (oscillators[i].in_use && oscillators[i].note == note) {
+            return i;
+        }
+    }
     return -1;
 }
 
 static int find_free_slot(void) {
-    for (int i = 0; i < NUM_OSCILLATORS; i++)
-        if (!oscillators[i].in_use) return i;
+    for (int i = 0; i < NUM_OSCILLATORS; i++) {
+        if (!oscillators[i].in_use) {
+            return i;
+        }
+    }
     return -1;
 }
 
 static int any_active(void) {
-    for (int i = 0; i < NUM_OSCILLATORS; i++)
-        if (oscillators[i].in_use) return 1;
+    for (int i = 0; i < NUM_OSCILLATORS; i++) {
+        if (oscillators[i].in_use) {
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -50,9 +58,9 @@ static void handle_sigint(int sig) {
 }
 
 uint16_t note_to_step_size(uint8_t note) {
-	double frequency = 440.0 * pow(2.0, (note - 69) / 12.0);
-	uint32_t step = (uint32_t)((frequency * TABLE_SIZE) / SAMPLE_RATE);
-	return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
+    double frequency = 440.0 * pow(2.0, (note - 69) / 12.0);
+    uint32_t step = (uint32_t)((frequency * TABLE_SIZE) / SAMPLE_RATE);
+    return (uint16_t)(step > 0xFFFF ? 0xFFFF : step);
 }
 
 #define NATIVE_NOTE 69   /* note at which the loaded WAV plays at original speed (A4) */
@@ -69,29 +77,44 @@ static double note_to_audio_step(uint8_t note) {
 void *run_synth(void *arg) {
     (void)arg;
     size_t n_samples = (size_t)SYNTH_SECONDS * SAMPLE_RATE;
-    size_t wt_len    = wavetable_len();
     int16_t *out = malloc(n_samples * sizeof(int16_t));
-    if (!out) { perror("run_synth: malloc"); return NULL; }
+    if (!out) {
+        perror("run_synth: malloc");
+        return NULL;
+    }
 
     struct timespec chunk_sleep = {0, SYNTH_CHUNK_MS * 1000L * 1000L};
 
     for (size_t chunk_start = 0; chunk_start < n_samples; chunk_start += SYNTH_CHUNK_SAMP) {
         size_t chunk_end = chunk_start + SYNTH_CHUNK_SAMP;
-        if (chunk_end > n_samples) chunk_end = n_samples;
+        if (chunk_end > n_samples) {
+            chunk_end = n_samples;
+        }
 
         for (size_t t = chunk_start; t < chunk_end; t++) {
             int32_t mix = 0;
             for (int j = 0; j < NUM_OSCILLATORS; j++) {
-                if (!oscillators[j].in_use || wt_len == 0) continue;
+                if (!oscillators[j].in_use) {
+                    continue;
+                }
+                int slot = oscillators[j].wavetable;
+                size_t slot_len = wavetable_len(slot);
+                if (slot_len == 0) {
+                    continue;
+                }
                 oscillators[j].phase += oscillators[j].audio_step;
-                while (oscillators[j].phase >= (double)wt_len) {
-                    oscillators[j].phase -= (double)wt_len;
+                while (oscillators[j].phase >= (double)slot_len) {
+                    oscillators[j].phase -= (double)slot_len;
                 }
                 size_t idx = (size_t)oscillators[j].phase;
-                mix += wavetable_read(idx);
+                mix += wavetable_read(slot, idx);
             }
-            if (mix > INT16_MAX) mix = INT16_MAX;
-            if (mix < INT16_MIN) mix = INT16_MIN;
+            if (mix > INT16_MAX) {
+                mix = INT16_MAX;
+            }
+            if (mix < INT16_MIN) {
+                mix = INT16_MIN;
+            }
             out[t] = (int16_t)mix;
         }
 
@@ -114,7 +137,9 @@ void *run_midi_reciever(void *arg){
     /* main event loop */
     midi_event_t midi_packet;
     while (1) {
-        if (midi_read(midi_device, endpoint, &midi_packet) < 0) continue;
+        if (midi_read(midi_device, endpoint, &midi_packet) < 0) {
+            continue;
+        }
 
         if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON) {
             if (find_note_slot(midi_packet.note) == -1) {
@@ -123,7 +148,7 @@ void *run_midi_reciever(void *arg){
                 if (i >= 0) {
                     oscillators[i].note       = midi_packet.note;
                     oscillators[i].step_size  = note_to_step_size(midi_packet.note);
-                    oscillators[i].resolution = g_sample_res;
+                    oscillators[i].wavetable  = g_current_wavetable;
                     oscillators[i].audio_step = note_to_audio_step(midi_packet.note);
                     oscillators[i].phase      = 0;
                     oscillators[i].in_use     = true;
@@ -137,12 +162,72 @@ void *run_midi_reciever(void *arg){
         } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
             int i = find_note_slot(midi_packet.note);
 
-            if (i >= 0) oscillators[i].in_use = false;
+            if (i >= 0) {
+                oscillators[i].in_use = false;
+            }
 
             fpga_set_note_on(handle, any_active() ? 1 : 0);
+
+        } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PROGRAM_CHANGE) {
+            /* Program Change: program number is in midi_packet.note (byte 2).
+             * Switch every oscillator (held included) to the new slot. */
+            uint8_t program = midi_packet.note;
+            if (program < MAX_WAVETABLE_SLOTS && wavetable_len(program) > 0) {
+                g_current_wavetable = program;
+                for (int i = 0; i < NUM_OSCILLATORS; i++) {
+                    oscillators[i].wavetable = program;
+                }
+                printf("Program change -> slot %u\n", program);
+            }
         }
     }
     return NULL;
+}
+
+/* Load a manifest: one WAV path per line. Blank lines and `#`-comments skipped.
+ * Returns number of slots successfully loaded. */
+static int load_manifest(const char *path) {
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        perror("load_manifest: fopen");
+        return -1;
+    }
+    char line[1024];
+    int slot = 0;
+    while (fgets(line, sizeof(line), f) && slot < MAX_WAVETABLE_SLOTS) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (line[0] == '\0' || line[0] == '#') {
+            continue;
+        }
+        int16_t *samples = NULL;
+        size_t n = 0;
+        uint32_t sr = 0;
+        if (load_wav(line, &samples, &n, &sr) != 0) {
+            continue;
+        }
+        if (wavetable_load(slot, samples, n) == 0) {
+            printf("slot %d: %zu samples @ %u Hz from %s\n", slot, n, sr, line);
+            slot++;
+        }
+        free(samples);
+    }
+    fclose(f);
+    return slot;
+}
+
+static void run_debug_print(void) {
+    uint8_t endpoint;
+    struct libusb_device_handle *midi_device = midi_open(&endpoint);
+    if (!midi_device) {
+        fprintf(stderr, "run_debug_print: no MIDI device\n");
+        return;
+    }
+    printf("MIDI debug mode: printing every packet. Ctrl+C to quit.\n");
+    midi_event_t midi_packet;
+    while (1) {
+        midi_read(midi_device, endpoint, &midi_packet);
+        /* midi_read already prints the payload */
+    }
 }
 
 int main(int argc, char **argv) {
@@ -153,14 +238,17 @@ int main(int argc, char **argv) {
     signal(SIGINT, handle_sigint);
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <wavfile>\n", argv[0]);
+        /* no manifest -> debug-print mode */
+        run_debug_print();
+        return 0;
+    }
+
+    int loaded = load_manifest(argv[1]);
+    if (loaded <= 0) {
+        fprintf(stderr, "No wavetables loaded from %s\n", argv[1]);
         return 1;
     }
-    if (load_wav(argv[1], &g_sample_buf, &g_sample_n, &g_sample_sr) != 0) {
-        return 1;
-    }
-    printf("Loaded %zu samples @ %u Hz from %s\n", g_sample_n, g_sample_sr, argv[1]);
-    wavetable_init(g_sample_buf, g_sample_n);
+    printf("Loaded %d wavetable slot(s). Starting synth.\n", loaded);
 
     pthread_t midi_thread, synth_thread;
     pthread_create(&midi_thread,  NULL, run_midi_reciever, &handle);
