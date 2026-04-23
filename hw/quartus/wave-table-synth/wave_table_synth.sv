@@ -85,17 +85,23 @@ module wave_table_synth (
 
     assign readdata = 16'h0;
 
-    /* ---------------- Sample-tick edge detect ---------------- */
-    wire  ready = ready_left & ready_right;
-    logic ready_d;
+    /* ---------------- Sample-tick generator ----------------
+     * Free-running 50 MHz -> ~48 kHz divider. Independent of the audio
+     * IP's ready backpressure so the mixer advances at a steady audio
+     * rate; ready_left/ready_right are only used to gate sample_valid.
+     */
+    localparam int SAMPLE_DIV = 1042;  // 50_000_000 / 48_000 ~= 1042
+    logic [10:0] tick_cnt;
     always_ff @(posedge clk) begin
         if (reset) begin
-            ready_d <= 1'b0;
+            tick_cnt <= 11'd0;
+        end else if (tick_cnt == SAMPLE_DIV - 1) begin
+            tick_cnt <= 11'd0;
         end else begin
-            ready_d <= ready;
+            tick_cnt <= tick_cnt + 11'd1;
         end
     end
-    wire sample_tick = ready & ~ready_d;
+    wire sample_tick = (tick_cnt == SAMPLE_DIV - 1);
 
     /* ---------------- Oscillator TDM bank ---------------- */
     logic [15:0] voice_sample;
@@ -144,6 +150,21 @@ module wave_table_synth (
         end
     end
 
-    assign sample_valid = ready_left & ready_right;
+    /* ---------------- Avalon-ST handshake ----------------
+     * Raise sample_pending when the mixer latches a new sample; drop it
+     * the cycle the sink accepts it (valid && ready_left && ready_right).
+     * This produces exactly one valid assertion per mixed sample.
+     */
+    logic sample_pending;
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            sample_pending <= 1'b0;
+        end else if (sweep_done) begin
+            sample_pending <= 1'b1;
+        end else if (sample_pending && ready_left && ready_right) begin
+            sample_pending <= 1'b0;
+        end
+    end
+    assign sample_valid = sample_pending;
 
 endmodule
