@@ -38,15 +38,18 @@ module oscillator (
     typedef enum logic { IDLE, RUNNING } state_t;
     state_t state;
 
-    /* step counts 0..32 across a sweep. At step = k (for k < 32) we present
-     * the BRAM address for voice k; at step = k+1 we latch voice k's sample.
-     * So step reaches 32 on the cycle that latches voice 31. */
+    /* step counts 0..33 across a sweep. At step = k (for k < 32) we present
+     * the BRAM address for voice k; BRAM has a 1-cycle read latency so
+     * mem[addr_k] isn't stable in bram_rdata until two cycles later. We
+     * consume voice (step - 2)'s sample; sweep_done fires at step == 33
+     * after voice 31 has been latched. */
     logic [5:0] step;
 
     logic [23:0] phase [0:31];
 
-    /* Previous-voice index (the one whose BRAM data is available this cycle). */
-    wire [4:0] prev_v = step[4:0] - 5'd1;
+    /* Voice whose sample is valid in bram_rdata this cycle. For step=2 this
+     * is 0; for step=33 it is 31 (mod-32 wrap via 5-bit subtract). */
+    wire [4:0] consume_v = step[4:0] - 5'd2;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -78,26 +81,27 @@ module oscillator (
                         bram_raddr <= { table_sel[step[4:0]], phase[step[4:0]][23:13] };
                     end
 
-                    /* Latch voice (step - 1)'s BRAM read into the output and
-                     * advance that voice's phase accumulator. */
-                    if (step > 6'd0) begin
-                        voice_idx   <= prev_v;
+                    /* Two cycles after address presentation, bram_rdata holds that
+                     * voice's sample. Consume voice (step - 2) and advance its
+                     * phase accumulator. */
+                    if (step > 6'd1) begin
+                        voice_idx   <= consume_v;
                         voice_valid <= 1'b1;
-                        if (ctrl[prev_v] == 2'b10) begin
+                        if (ctrl[consume_v] == 2'b10) begin
                             voice_sample <= bram_rdata;
                         end else begin
                             voice_sample <= 16'h0;
                         end
 
-                        if (ctrl[prev_v] == 2'b11) begin
-                            phase[prev_v] <= 24'h0;
-                        end else if (ctrl[prev_v] == 2'b10) begin
-                            phase[prev_v] <= phase[prev_v] + { step_size[prev_v], 8'h0 };
+                        if (ctrl[consume_v] == 2'b11) begin
+                            phase[consume_v] <= 24'h0;
+                        end else if (ctrl[consume_v] == 2'b10) begin
+                            phase[consume_v] <= phase[consume_v] + { step_size[consume_v], 8'h0 };
                         end
                         /* ctrl == 2'b00 or 2'b01 -> hold phase */
                     end
 
-                    if (step == 6'd32) begin
+                    if (step == 6'd33) begin
                         sweep_done <= 1'b1;
                         state      <= IDLE;
                     end else begin
