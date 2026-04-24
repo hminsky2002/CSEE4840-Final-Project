@@ -106,7 +106,6 @@ int midi_read(struct libusb_device_handle *midi,
     }
     *evt = buf[0];
 
-    printf("transferred %d bytes\n", transferred);
     printf("%02x %02x %02x %02x\n",
            evt->status,
            evt->not_sure,
