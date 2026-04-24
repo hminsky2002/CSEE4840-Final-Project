@@ -3,15 +3,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include <signal.h>
-#include <math.h>
 #include <pthread.h>
 #include <time.h>
 #include "midi.h"
-#include "midi_to_fpga.h"
-#include "fpga_bridge.h"
 #include "oscillator.h"
-#include "wavetable.h"
 
 void *run_midi_reciever(){
 

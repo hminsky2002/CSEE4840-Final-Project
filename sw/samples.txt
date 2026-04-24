@@ -1,4 +1,1 @@
-wavs/AKWF_0101.WAV
-wavs/AKWF_0102.WAV
-wavs/AKWF_0081.wav
-wavs/AKWF_0076.wav
+wavs/saw_8192.wav
