@@ -5,8 +5,8 @@
 #include <libusb-1.0/libusb.h>
 
 typedef struct {
-    uint8_t status;
     uint8_t not_sure;
+    uint8_t status;
     uint8_t note;
     uint8_t attack;
 } midi_event_t;
