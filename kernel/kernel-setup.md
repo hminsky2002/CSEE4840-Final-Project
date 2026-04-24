@@ -81,14 +81,14 @@ Plug in the MPKmini2 — `dmesg` should now log a full descriptor dump (thanks t
 
 ### Userspace consequences
 
-With ALSA in the kernel, the existing libusb-based [sw/midi.c](../sw/midi.c) becomes unnecessary; the simpler path is:
+The new kernel exposes the MPKmini2 as `/dev/snd/midiC0D0` (card index visible in `cat /proc/asound/cards`). [sw/midi.c](../sw/midi.c) has been migrated off libusb to a plain `open()` / `read()` on that device node, with a small running-status state machine to assemble channel-voice events. Net effect:
 
-```c
-int fd = open("/dev/snd/midiC1D0", O_RDONLY);
-read(fd, buf, sizeof(buf));   // standard 3-byte MIDI messages, hardware-clocked
-```
+- [sw/Makefile](../sw/Makefile) no longer links `-lusb-1.0`.
+- [sw/midi.h](../sw/midi.h) API is now `int midi_open(void)` / `int midi_read(int fd, midi_event_t *evt)` / `void midi_close(int fd)`. `midi_event_t` is `{status, note, attack}` (the full MIDI status byte, plus data bytes 1 and 2).
+- Constants in [sw/midi_to_fpga.h](../sw/midi_to_fpga.h) are real MIDI status bytes (`0x90` note-on, `0x80` note-off, `0xB0` CC, `0xC0` PC) masked with `0xF0`, **not** USB-MIDI CIN values.
+- `midi_open()` probes `/dev/snd/midiC0D0`..`midiC7D0` and returns the first one that opens, so adding a second MIDI device on a higher card index doesn't immediately break things.
 
-No libusb scaffolding, no manual interface claiming, and timing is driven by the host controller's URB scheduling rather than userspace polling.
+Timing is driven by the USB host controller's URB scheduling rather than userspace polling, so the jitter / packet-drop issue that motivated the kernel rebuild is gone.
 
 ---
 
