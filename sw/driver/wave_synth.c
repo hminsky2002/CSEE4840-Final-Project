@@ -1,13 +1,3 @@
-/*
- * Device driver for the FPGA wave-table synth.
- *
- * Minimal platform driver: exposes the synth's register region to userspace
- * via /dev/wave_synth. Userspace opens the device and mmaps it to write
- * control registers directly (no /dev/mem, no root).
- *
- * Adapted from the lab 3 vga_ball driver (Stephen A. Edwards).
- */
-
 #include "wave_synth.h"
 #include <linux/errno.h>
 #include <linux/fs.h>

@@ -146,7 +146,7 @@ void *run_midi_reciever(void *arg){
             /* Program Change: program number is in midi_packet.note (byte 2).
              * Switch every oscillator (held included) to the new slot. */
             uint8_t program = midi_packet.note;
-            if (program < MAX_WAVETABLE_SLOTS && wavetable_len(program) > 0) {
+            if (wavetable_slot_valid(program)) {
                 g_current_wavetable = program;
                 for (int i = 0; i < NUM_OSCILLATORS; i++) {
                     oscillators[i].wavetable = program;
@@ -159,39 +159,6 @@ void *run_midi_reciever(void *arg){
         }
     }
     return NULL;
-}
-
-/* Load a manifest: one WAV path per line. Blank lines and `#`-comments skipped.
- * Returns number of slots successfully loaded. */
-static int load_manifest(const char *path, fpga_handle_t *handle) {
-    FILE *f = fopen(path, "r");
-    if (!f) {
-        perror("load_manifest: fopen");
-        return -1;
-    }
-    char line[1024];
-    int slot = 0;
-    while (fgets(line, sizeof(line), f) && slot < MAX_WAVETABLE_SLOTS) {
-        line[strcspn(line, "\r\n")] = '\0';
-        if (line[0] == '\0' || line[0] == '#') {
-            continue;
-        }
-        int16_t *samples = NULL;
-        size_t n = 0;
-        uint32_t sr = 0;
-        if (load_wav(line, &samples, &n, &sr) != 0) {
-            continue;
-        }
-        if (wavetable_load(slot, samples, n) == 0) {
-            int push_n = (n > TABLE_SIZE) ? TABLE_SIZE : (int)n;
-            fpga_load_slot(handle, slot, samples, push_n);
-            printf("slot %d: %zu samples @ %u Hz from %s\n", slot, n, sr, line);
-            slot++;
-        }
-        free(samples);
-    }
-    fclose(f);
-    return slot;
 }
 
 static void run_debug_print(void) {
@@ -219,12 +186,12 @@ int main(int argc, char **argv) {
     signal(SIGINT, handle_sigint);
 
     if (argc < 2) {
-        /* no manifest -> debug-print mode */
+        /* no wavetable bin -> debug-print mode */
         run_debug_print();
         return 0;
     }
 
-    int loaded = load_manifest(argv[1], &handle);
+    int loaded = load_wavetable_bin(argv[1], &handle);
     if (loaded <= 0) {
         fprintf(stderr, "No wavetables loaded from %s\n", argv[1]);
         return 1;
