@@ -13,8 +13,7 @@
 #include "oscillator.h"
 #include "wavetable.h"
 
-void *run_midi_reciever(void *arg){
-    fpga_handle_t *handle = (fpga_handle_t *)arg;
+void *run_midi_reciever(){
 
     /* open MIDI device */
     uint8_t endpoint;
@@ -33,7 +32,7 @@ void *run_midi_reciever(void *arg){
 }
 
 
-int main(int argc, char **argv) {
+int main() {
     /* mmap at startup */
 
     pthread_t midi_thread;
