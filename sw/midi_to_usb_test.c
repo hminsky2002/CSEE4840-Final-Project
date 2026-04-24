@@ -11,17 +11,17 @@
 void *run_midi_reciever(){
 
     /* open MIDI device */
-    uint8_t endpoint;
-    struct libusb_device_handle *midi_device = midi_open(&endpoint);
+    int midi_fd = midi_open();
+    if (midi_fd < 0) return NULL;
 
     /* main event loop */
     midi_event_t midi_packet;
     while (1) {
-        if (midi_read(midi_device, endpoint, &midi_packet) < 0) {
+        if (midi_read(midi_fd, &midi_packet) < 0) {
             continue;
         }
-
-        
+        printf("%02x %02x %02x\n",
+               midi_packet.status, midi_packet.note, midi_packet.attack);
     }
     return NULL;
 }

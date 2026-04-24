@@ -87,13 +87,13 @@ void *run_midi_reciever(void *arg){
     fpga_handle_t *handle = (fpga_handle_t *)arg;
 
     /* open MIDI device */
-    uint8_t endpoint;
-    struct libusb_device_handle *midi_device = midi_open(&endpoint);
+    int midi_fd = midi_open();
+    if (midi_fd < 0) return NULL;
 
     /* main event loop */
     midi_event_t midi_packet;
     while (1) {
-        if (midi_read(midi_device, endpoint, &midi_packet) < 0) {
+        if (midi_read(midi_fd, &midi_packet) < 0) {
             continue;
         }
 
@@ -162,17 +162,16 @@ void *run_midi_reciever(void *arg){
 }
 
 static void run_debug_print(void) {
-    uint8_t endpoint;
-    struct libusb_device_handle *midi_device = midi_open(&endpoint);
-    if (!midi_device) {
+    int midi_fd = midi_open();
+    if (midi_fd < 0) {
         fprintf(stderr, "run_debug_print: no MIDI device\n");
         return;
     }
-    printf("MIDI debug mode: printing every packet. Ctrl+C to quit.\n");
+    printf("MIDI debug mode: printing every event. Ctrl+C to quit.\n");
     midi_event_t midi_packet;
-    while (1) {
-        midi_read(midi_device, endpoint, &midi_packet);
-        /* midi_read already prints the payload */
+    while (midi_read(midi_fd, &midi_packet) == 0) {
+        printf("%02x %02x %02x\n",
+               midi_packet.status, midi_packet.note, midi_packet.attack);
     }
 }
 

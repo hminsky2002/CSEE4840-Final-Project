@@ -159,3 +159,4 @@ This patch is applied directly to `kernel/linux-socfpga/arch/arm/`. It's not in 
 - [linux-socfpga/.config](linux-socfpga/.config) — current kernel configuration
 - [linux-socfpga/arch/arm/boot/zImage](linux-socfpga/arch/arm/boot/zImage) — built kernel image (post-build)
 - [linux-headers-4.19.0/](linux-headers-4.19.0/) — headers for the *running* kernel image (currently mismatched: that image was built without `CONFIG_SOUND`, so its `Module.symvers` has zero `snd_*` symbols. Useful only for out-of-tree modules against features the running kernel actually has — not for adding ALSA shortcuts.)
+ls -la /dev/snd/
