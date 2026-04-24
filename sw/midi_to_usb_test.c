@@ -35,10 +35,9 @@ void *run_midi_reciever(void *arg){
 
 int main(int argc, char **argv) {
     /* mmap at startup */
-    fpga_handle_t handle;
 
     pthread_t midi_thread;
-    pthread_create(&midi_thread, NULL, run_midi_reciever, &handle);
+    pthread_create(&midi_thread, NULL, run_midi_reciever, NULL);
     pthread_join(midi_thread, NULL);   /* runs forever; exit via SIGINT */
     return 0;
 }
