@@ -85,6 +85,10 @@ struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
     libusb_free_device_list(devs, 1);
     return midi;
 }
+
+static midi_event_t buffer[20] = {0};
+static int counter = 0;
+
 int midi_read(struct libusb_device_handle *midi,
               uint8_t endpoint_address,
               midi_event_t *evt) {
@@ -106,12 +110,25 @@ int midi_read(struct libusb_device_handle *midi,
     }
     *evt = buf[0];
 
-    printf("transfer bytes %d \n",transferred);
-    printf("%02x %02x %02x %02x\n",
-           evt->status,
-           evt->not_sure,
-           evt->note,
-           evt->attack);
+
+    int j = 0;
+    while (transferred - 4 >= 0 && counter < 20) {
+        buffer[counter] = buf[j];
+        transferred -= 4;
+        counter += 1;
+        j += 1;
+    }
+
+    if (counter >= 20) {
+        for (int i = 0; i < counter; i++) {
+            printf("%02x %02x %02x %02x\n",
+                   buffer[i].status,
+                   buffer[i].not_sure,
+                   buffer[i].note,
+                   buffer[i].attack);
+        }
+        counter = 0;
+    }
 
     return 0;
 }
