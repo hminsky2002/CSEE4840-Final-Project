@@ -89,12 +89,12 @@ int midi_read(struct libusb_device_handle *midi,
               uint8_t endpoint_address,
               midi_event_t *evt) {
     int transferred;
-    midi_event_t buf[4] = {0};
+    midi_event_t buf[16] = {0};
 
     for (;;) {
         memset(evt, 0, sizeof(*evt));
         int r = libusb_bulk_transfer(midi, endpoint_address,
-                                     (unsigned char *)buf, 4 * sizeof(midi_event_t),
+                                     (unsigned char *)buf, 16 * sizeof(midi_event_t),
                                      &transferred, 1000);
         if (r != 0) {
             continue;
@@ -106,6 +106,7 @@ int midi_read(struct libusb_device_handle *midi,
     }
     *evt = buf[0];
 
+    printf("transfer bytes %d \n",transferred);
     printf("%02x %02x %02x %02x\n",
            evt->status,
            evt->not_sure,
