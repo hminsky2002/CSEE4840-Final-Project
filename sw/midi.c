@@ -12,6 +12,7 @@
 
 #define LIBUSB_CLASS_AUDIO 1
 #define MIDI_STREAMING     3
+#define LIBUSB_CLASS_HID   3
 
 /*
  * Find and open a USB MIDI device; writes the IN endpoint address to
@@ -48,8 +49,7 @@ struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
                 for (k = 0; k < config->interface[i].num_altsetting; k++) {
                     const struct libusb_interface_descriptor *inter =
                         config->interface[i].altsetting + k;
-                    if (inter->bInterfaceClass == LIBUSB_CLASS_AUDIO &&
-                        inter->bInterfaceSubClass == MIDI_STREAMING) {
+                    if (inter->bInterfaceClass == LIBUSB_CLASS_HID) {
                         int r;
                         if ((r = libusb_open(dev, &midi)) != 0) {
                             fprintf(stderr, "Error: libusb_open failed: %d\n", r);
@@ -86,50 +86,27 @@ struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
     return midi;
 }
 
-static midi_event_t buffer[20] = {0};
-static int counter = 0;
-
 int midi_read(struct libusb_device_handle *midi,
               uint8_t endpoint_address,
               midi_event_t *evt) {
-    int transferred;
-    midi_event_t buf[16] = {0};
+    int transferred = 0;
+    uint8_t buf[32] = {0};
 
-    for (;;) {
-        memset(evt, 0, sizeof(*evt));
-        int r = libusb_bulk_transfer(midi, endpoint_address,
-                                     (unsigned char *)buf, 16 * sizeof(midi_event_t),
-                                     &transferred, 1000);
-        if (r != 0) {
-            continue;
-        }
-        if (transferred != 4 && transferred != 0) {
-            printf("transferred is %d",transferred);
-            continue;
-        }
-        break;
-    }
-    *evt = buf[0];
+    memset(evt, 0, sizeof(*evt));
 
-
-    int j = 0;
-    while (transferred - 4 >= 0 && counter < 20) {
-        buffer[counter] = buf[j];
-        transferred -= 4;
-        counter += 1;
-        j += 1;
+    int r = libusb_interrupt_transfer(midi, endpoint_address,
+                                      buf, sizeof(buf),
+                                      &transferred, 1000);
+    if (r != 0 || transferred == 0) {
+        return 0;
     }
 
-    if (counter >= 20) {
-        for (int i = 0; i < counter; i++) {
-            printf("%02x %02x %02x %02x\n",
-                   buffer[i].status,
-                   buffer[i].not_sure,
-                   buffer[i].note,
-                   buffer[i].attack);
-        }
-        counter = 0;
+    printf("[hid %2d]", transferred);
+    for (int i = 0; i < transferred; i++) {
+        printf(" %02x", buf[i]);
     }
+    printf("\n");
+    fflush(stdout);
 
     return 0;
 }
