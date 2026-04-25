@@ -1,3 +1,9 @@
+# linux kernel make file for altera de1 soc 
+# to be run on ubuntu x86 machine with kernel
+# version 6.17
+# shamelessly ripped and modified from CSEE4840 lab3 
+# https://www.cs.columbia.edu/~sedwards/classes/2026/4840-spring/lab3-hw.tar.gz
+
 KERNEL_REPO = https://github.com/altera-opensource/linux-socfpga.git
 KERNEL_BRANCH = rel_socfpga-4.19_19.04.01_pr
 DEFAULT_CONFIG = socfpga_defconfig
@@ -53,7 +59,7 @@ $(KERNEL_CONFIG) : | $(KERNEL_DIR)
 	  --disable CONFIG_GFS2_FS \
 	  --disable CONFIG_TEST_KMOD
 
-# Compile the kernel.
+# Compile the kernel for my ubuntu 24.04 kernel 6.17.0-20-generic.
 #   HOSTCFLAGS=-fcommon  — host-side dtc fix (GCC 10+ -fno-common default
 #                          clashes with duplicate yylloc in dtc-lexer/parser).
 #   KCFLAGS=-march=armv7-a — Cortex-A9 target. Forces the kernel's

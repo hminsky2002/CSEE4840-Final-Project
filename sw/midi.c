@@ -4,8 +4,6 @@
  *
  * Name/UNI: Henry Minsky (hm3121), Opalina Khanna (ok2373), Sunny Fang (yf2610)
  */
-#define _POSIX_C_SOURCE 199309L   /* expose clock_gettime / CLOCK_MONOTONIC */
-
 #include "midi.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +11,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <time.h>
 
 int midi_open(void) {
     char path[32];
@@ -28,26 +25,18 @@ int midi_open(void) {
     return -1;
 }
 
-/* The DE1-SoC's dwc2 USB host on kernel 4.19 has a split-transaction bug
- * that occasionally redelivers the same bulk-IN URB to a full-speed device
- * sitting behind a hub.  Symptom: every MIDI byte is duplicated sub-ms
- * apart.  We drop any event byte-identical to the previous one within
- * DEDUP_WINDOW_MS — well above the redelivery gap, well below the
- * fastest a human can re-press the same key. */
-#define DEDUP_WINDOW_MS 5
-
-static long ms_since(const struct timespec *a, const struct timespec *b) {
-    return (a->tv_sec - b->tv_sec) * 1000 + (a->tv_nsec - b->tv_nsec) / 1000000;
-}
-
 /* Read one channel-voice message from the ALSA rawmidi stream.
  * Handles MIDI running status, skips realtime (0xF8-0xFF) and system
- * common/sysex (0xF0-0xF7) messages, drops dwc2-style duplicates.
- * Blocks on read(); returns 0 on success, -1 if the device closes. */
+ * common/sysex (0xF0-0xF7) messages.  Blocks on read(); returns 0 on
+ * success, -1 if the device closes.
+ *
+ * Note: the dwc2 USB host on this kernel sometimes redelivers the same
+ * bulk-IN URB, which shows up as every MIDI byte arriving twice.  We
+ * don't dedup here — the synth's note allocator is idempotent (note-on
+ * checks find_note_slot, note-off only fires if a slot is in_use), so
+ * doubled events are a no-op for playback. */
 int midi_read(int fd, midi_event_t *evt) {
     static uint8_t running_status = 0;
-    static midi_event_t last_evt = {0};
-    static struct timespec last_ts = {0};
     uint8_t b;
 
     for (;;) {
@@ -76,17 +65,6 @@ int midi_read(int fd, midi_event_t *evt) {
         } else {
             if (read(fd, &evt->attack, 1) != 1) return -1;
         }
-
-        struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        if (evt->status == last_evt.status &&
-            evt->note   == last_evt.note   &&
-            evt->attack == last_evt.attack &&
-            ms_since(&now, &last_ts) < DEDUP_WINDOW_MS) {
-            continue;   /* dwc2 redelivery — drop */
-        }
-        last_evt = *evt;
-        last_ts  = now;
         return 0;
     }
 }
