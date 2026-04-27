@@ -38,11 +38,6 @@ module oscillator (
     typedef enum logic { IDLE, RUNNING } state_t;
     state_t state;
 
-    /* step counts 0..33 across a sweep. At step = k (for k < 32) we present
-     * the BRAM address for voice k; BRAM has a 1-cycle read latency so
-     * mem[addr_k] isn't stable in bram_rdata until two cycles later. We
-     * consume voice (step - 2)'s sample; sweep_done fires at step == 33
-     * after voice 31 has been latched. */
     logic [5:0] step;
 
     logic [23:0] phase [0:31];

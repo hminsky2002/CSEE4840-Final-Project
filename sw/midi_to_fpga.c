@@ -50,6 +50,15 @@ static fpga_handle_t *g_handle = NULL;
  * always start at base pitch. */
 #define PITCH_BEND_CENTER 8192
 
+/* Tapping ARP_TOGGLE_NOTE flips arpeggiator mode. While on, a worker thread
+ * keeps only one held voice audible at a time, advancing every ARP_STEP_NS
+ * nanoseconds. The toggle key itself never gets allocated as a voice. */
+#define ARP_TOGGLE_NOTE 0x3C
+#define ARP_STEP_NS     (120L * 1000L * 1000L)   /* 120 ms per step */
+
+static pthread_mutex_t g_synth_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool g_arp_enabled = false;
+
 static uint16_t scaled_step(uint16_t base_step, double ratio) {
     double s = (double)base_step * ratio;
     if (s < 1.0) return 1;
@@ -83,6 +92,44 @@ uint16_t note_to_step_size(uint8_t note) {
     return (uint16_t)(rounded > 0xFFFFu ? 0xFFFFu : rounded);
 }
 
+/* Push voice i's step register back to the value implied by its current
+ * step_size and pitch_ratio — i.e., undo any arp-induced muting. */
+static void restore_voice_step(fpga_handle_t *handle, int i) {
+    fpga_set_step(handle, i,
+                  scaled_step(oscillators[i].step_size,
+                              oscillators[i].pitch_ratio));
+}
+
+/* Arpeggiator worker. Idles unless g_arp_enabled. Each tick: gather currently-
+ * held voices, pick the next one in round-robin, restore its step and zero the
+ * rest. Voice releases / new keypresses are seen on the next tick because we
+ * re-scan oscillators[] every iteration. */
+static void *run_arp(void *arg) {
+    fpga_handle_t *handle = (fpga_handle_t *)arg;
+    struct timespec dt = { 0, ARP_STEP_NS };
+    int idx = 0;
+    while (1) {
+        pthread_mutex_lock(&g_synth_lock);
+        if (g_arp_enabled) {
+            int held[NUM_OSCILLATORS], n = 0;
+            for (int i = 0; i < NUM_OSCILLATORS; i++) {
+                if (oscillators[i].in_use) held[n++] = i;
+            }
+            if (n > 0) {
+                int active = held[idx % n];
+                idx = (idx + 1) % n;
+                for (int j = 0; j < n; j++) {
+                    if (held[j] == active) restore_voice_step(handle, held[j]);
+                    else                   fpga_set_step(handle, held[j], 0);
+                }
+            }
+        }
+        pthread_mutex_unlock(&g_synth_lock);
+        nanosleep(&dt, NULL);
+    }
+    return NULL;
+}
+
 void *run_midi_reciever(void *arg){
     fpga_handle_t *handle = (fpga_handle_t *)arg;
 
@@ -97,12 +144,21 @@ void *run_midi_reciever(void *arg){
             continue;
         }
 
+        pthread_mutex_lock(&g_synth_lock);
+
         if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON) {
             if (midi_packet.note == PANIC_NOTE) {
                 panic_all_voices(handle);
-                continue;
-            }
-            if (find_note_slot(midi_packet.note) == -1) {
+            } else if (midi_packet.note == ARP_TOGGLE_NOTE) {
+                g_arp_enabled = !g_arp_enabled;
+                if (!g_arp_enabled) {
+                    /* leaving arp mode: un-mute every held voice */
+                    for (int i = 0; i < NUM_OSCILLATORS; i++) {
+                        if (oscillators[i].in_use) restore_voice_step(handle, i);
+                    }
+                }
+                printf("Arp %s\n", g_arp_enabled ? "ON" : "OFF");
+            } else if (find_note_slot(midi_packet.note) == -1) {
                 int i = find_free_slot();
 
                 if (i >= 0) {
@@ -113,7 +169,11 @@ void *run_midi_reciever(void *arg){
                     oscillators[i].pitch_ratio = 1.0;   /* fresh note: base pitch */
                     oscillators[i].in_use      = true;
 
-                    fpga_voice_start(handle, i, step, g_current_wavetable);
+                    /* In arp mode, start muted; the arp thread will unmute it
+                     * on its turn. Otherwise start at full step like before. */
+                    fpga_voice_start(handle, i,
+                                     g_arp_enabled ? 0 : step,
+                                     g_current_wavetable);
                 }
             }
 
@@ -135,8 +195,12 @@ void *run_midi_reciever(void *arg){
             for (int i = 0; i < NUM_OSCILLATORS; i++) {
                 if (oscillators[i].in_use) {
                     oscillators[i].pitch_ratio = ratio;
-                    fpga_set_step(handle, i,
-                                  scaled_step(oscillators[i].step_size, ratio));
+                    /* In arp mode, only the arp thread writes the step
+                     * register — otherwise we'd un-mute silenced voices. */
+                    if (!g_arp_enabled) {
+                        fpga_set_step(handle, i,
+                                      scaled_step(oscillators[i].step_size, ratio));
+                    }
                 }
             }
 
@@ -155,6 +219,8 @@ void *run_midi_reciever(void *arg){
                 printf("Program change -> slot %u\n", program);
             }
         }
+
+        pthread_mutex_unlock(&g_synth_lock);
     }
     return NULL;
 }
@@ -195,8 +261,9 @@ int main(int argc, char **argv) {
     }
     printf("Loaded %d wavetable slot(s). Listening for MIDI.\n", loaded);
 
-    pthread_t midi_thread;
+    pthread_t midi_thread, arp_thread;
     pthread_create(&midi_thread, NULL, run_midi_reciever, &handle);
+    pthread_create(&arp_thread,  NULL, run_arp,           &handle);
     pthread_join(midi_thread, NULL);   /* runs forever; exit via SIGINT */
     return 0;
 }
