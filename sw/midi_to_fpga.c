@@ -54,7 +54,7 @@ static fpga_handle_t *g_handle = NULL;
  * keeps only one held voice audible at a time, advancing every ARP_STEP_NS
  * nanoseconds. The toggle key itself never gets allocated as a voice. */
 #define ARP_TOGGLE_NOTE 0x3C
-#define ARP_STEP_NS     (80L * 1000L * 1000L)   /* 120 ms per step */
+#define ARP_STEP_NS     (140L * 1000L * 1000L)   /* 120 ms per step */
 
 static pthread_mutex_t g_synth_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool g_arp_enabled = false;
