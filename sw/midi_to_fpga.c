@@ -44,11 +44,11 @@ static fpga_handle_t *g_handle = NULL;
  * got dropped or came in on a different note than the NOTE_ON. */
 #define PANIC_NOTE 0x33
 
-/* CC number of the pitch dial on the controller. Value 64 is the "center"
- * (no pitch change); 0 bends down one octave, 127 bends up one octave.
- * Only voices that were already active when the dial moves get bent —
- * new note-ons always start at base pitch. */
-#define CC_PITCH_DIAL 8
+/* Pitch-bend wheel center value (14-bit, MSB:LSB = 0x40:0x00).
+ * Wheel at center = no pitch change; full down = -1 octave, full up = +1 octave.
+ * Only voices already active when the wheel moves get bent — new note-ons
+ * always start at base pitch. */
+#define PITCH_BEND_CENTER 8192
 
 static uint16_t scaled_step(uint16_t base_step, double ratio) {
     double s = (double)base_step * ratio;
@@ -125,20 +125,18 @@ void *run_midi_reciever(void *arg){
                 fpga_voice_stop(handle, i);
             }
 
-        } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
-            if (midi_packet.note == CC_PITCH_DIAL) {
-                /* Map dial [0..127] to pitch multiplier [0.5x .. 2x]
-                 * around center 64 (one octave either direction).
-                 * Apply only to voices currently held — future note-ons
-                 * are unaffected because they reset pitch_ratio to 1.0. */
-                int dial = midi_packet.attack;
-                double ratio = pow(2.0, ((double)dial - 64.0) / 64.0);
-                for (int i = 0; i < NUM_OSCILLATORS; i++) {
-                    if (oscillators[i].in_use) {
-                        oscillators[i].pitch_ratio = ratio;
-                        fpga_set_step(handle, i,
-                                      scaled_step(oscillators[i].step_size, ratio));
-                    }
+        } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PITCH_BEND) {
+            /* 14-bit value: MSB is byte 2 (attack), LSB is byte 1 (note).
+             * Center 8192 = no bend; 0 = -1 octave; 16383 = +1 octave.
+             * Apply only to voices currently held — future note-ons are
+             * unaffected because they reset pitch_ratio to 1.0. */
+            int value = ((int)midi_packet.attack << 7) | midi_packet.note;
+            double ratio = pow(2.0, ((double)(value - PITCH_BEND_CENTER)) / (double)PITCH_BEND_CENTER);
+            for (int i = 0; i < NUM_OSCILLATORS; i++) {
+                if (oscillators[i].in_use) {
+                    oscillators[i].pitch_ratio = ratio;
+                    fpga_set_step(handle, i,
+                                  scaled_step(oscillators[i].step_size, ratio));
                 }
             }
 
