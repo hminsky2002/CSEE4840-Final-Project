@@ -7,8 +7,9 @@ skipped). Paths are resolved relative to the manifest's directory.
 
 Output: a raw binary file. Each slot is exactly TABLE_SIZE (8192) int16 mono
 samples, little-endian. Slots are concatenated in manifest order. Input wavs
-are converted to mono (stereo averaged) and truncated or zero-padded to
-TABLE_SIZE samples. 16-bit and 8-bit unsigned PCM sources are supported.
+are converted to mono (stereo averaged), resampled to TARGET_RATE (48 kHz)
+to match the FPGA DAC, then truncated or zero-padded to TABLE_SIZE samples.
+16-bit and 8-bit unsigned PCM sources are supported.
 
 Usage:
     python3 build_wavetable.py samples.txt -o wavetable.bin
@@ -21,15 +22,17 @@ import sys
 import wave
 from pathlib import Path
 
-TABLE_SIZE = 8192          # must match fpga_bridge.h
-MAX_SLOTS  = 4             # must match MAX_WAVETABLE_SLOTS in wavetable.h
+TABLE_SIZE  = 8192         # must match fpga_bridge.h
+MAX_SLOTS   = 4            # must match MAX_WAVETABLE_SLOTS in wavetable.h
+TARGET_RATE = 48000        # FPGA sample_tick rate
 
 
 def load_wav_mono_i16(path):
-    """Return a list of int16 mono samples from a PCM .wav file."""
+    """Return (mono int16 samples, source sample rate) from a PCM .wav file."""
     with wave.open(str(path), "rb") as w:
         channels   = w.getnchannels()
         samp_width = w.getsampwidth()
+        rate       = w.getframerate()
         n_frames   = w.getnframes()
         raw        = w.readframes(n_frames)
 
@@ -46,10 +49,28 @@ def load_wav_mono_i16(path):
         # 8-bit WAV PCM is UNSIGNED (128 = silence). Shift into int16 range.
         frames = [(b - 128) << 8 for b in raw]
 
-    if channels == 1:
-        return frames
-    # Stereo: average L/R pairs down to mono.
-    return [(frames[i] + frames[i + 1]) // 2 for i in range(0, len(frames), 2)]
+    if channels == 2:
+        # Average L/R pairs down to mono.
+        frames = [(frames[i] + frames[i + 1]) // 2 for i in range(0, len(frames), 2)]
+    return frames, rate
+
+
+def resample(samples, src_rate, dst_rate=TARGET_RATE):
+    """Linear-interp resample. No-op when rates match (the common case for
+    wavetables already authored at 48 kHz)."""
+    if src_rate == dst_rate or len(samples) < 2:
+        return samples
+    n_in  = len(samples)
+    n_out = max(1, int(round(n_in * dst_rate / src_rate)))
+    out = []
+    for j in range(n_out):
+        src_pos = j * (n_in - 1) / (n_out - 1) if n_out > 1 else 0.0
+        i0 = int(src_pos)
+        i1 = i0 + 1 if i0 + 1 < n_in else i0
+        frac = src_pos - i0
+        v = samples[i0] * (1.0 - frac) + samples[i1] * frac
+        out.append(int(round(v)))
+    return out
 
 
 def fit_to_table(samples):
@@ -92,9 +113,12 @@ def main():
 
     with open(args.output, "wb") as out:
         for slot, p in enumerate(paths):
-            samples = fit_to_table(load_wav_mono_i16(p))
+            raw, rate = load_wav_mono_i16(p)
+            resampled = resample(raw, rate)
+            samples   = fit_to_table(resampled)
             out.write(struct.pack("<{}h".format(TABLE_SIZE), *samples))
-            print("slot {}: {}".format(slot, p))
+            print("slot {}: {}  ({} Hz, {} -> {} samples)".format(
+                slot, p, rate, len(raw), len(resampled)))
 
     print("Wrote {} slot(s) to {}".format(len(paths), args.output))
     return 0
