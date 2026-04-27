@@ -1,1 +1,1 @@
-wavs/sin_8192.WAV
+wavs/sine_8192.WAV
