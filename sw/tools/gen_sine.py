@@ -13,7 +13,9 @@ import wave
 
 TABLE_SIZE  = 8192
 SAMPLE_RATE = 48000
-AMPLITUDE   = 32000   # leave a little headroom below INT16_MAX
+# Mixer sums voices into a saturating int16 accumulator. Keep per-voice peak
+# at INT16_MAX / 8 so up to 8 sines can phase-align without clipping.
+AMPLITUDE   = 4096
 
 
 def main():
