@@ -39,22 +39,17 @@ static int find_free_slot(void) {
 
 static fpga_handle_t *g_handle = NULL;
 
-/* Hitting this key on the controller force-mutes every voice and clears
- * allocator state — useful when a stuck note happens because a NOTE_OFF
- * got dropped or came in on a different note than the NOTE_ON. */
-#define PANIC_NOTE 0x33
-
 /* Pitch-bend wheel center value (14-bit, MSB:LSB = 0x40:0x00).
  * Wheel at center = no pitch change; full down = -1 octave, full up = +1 octave.
  * Only voices already active when the wheel moves get bent — new note-ons
  * always start at base pitch. */
 #define PITCH_BEND_CENTER 8192
 
-/* Tapping ARP_TOGGLE_NOTE flips arpeggiator mode. While on, a worker thread
- * keeps only one held voice audible at a time, advancing every ARP_STEP_NS
- * nanoseconds. The toggle key itself never gets allocated as a voice. */
-#define ARP_TOGGLE_NOTE 0x3C
-#define ARP_STEP_NS     (100L * 1000L * 1000L)   /* 120 ms per step */
+/* CC number that flips arpeggiator mode. CC 123 ("All Notes Off") is what the
+ * controller's panic button sends (e.g. "BF 7B 00"). While arp is on a worker
+ * thread keeps one held voice audible at a time, advancing every ARP_STEP_NS. */
+#define ARP_TOGGLE_CC 123
+#define ARP_STEP_NS   (100L * 1000L * 1000L)   /* 100 ms per step */
 
 static pthread_mutex_t g_synth_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool g_arp_enabled = false;
@@ -64,15 +59,6 @@ static uint16_t scaled_step(uint16_t base_step, double ratio) {
     if (s < 1.0) return 1;
     if (s > 0xFFFFu) return 0xFFFFu;
     return (uint16_t)(s + 0.5);
-}
-
-static void panic_all_voices(fpga_handle_t *handle) {
-    fpga_all_voices_off(handle);
-    for (int i = 0; i < NUM_OSCILLATORS; i++) {
-        oscillators[i].in_use = false;
-        oscillators[i].note   = 0;
-    }
-    printf("PANIC: all voices cleared\n");
 }
 
 static void handle_sigint(int sig) {
@@ -147,18 +133,7 @@ void *run_midi_reciever(void *arg){
         pthread_mutex_lock(&g_synth_lock);
 
         if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON) {
-            if (midi_packet.note == PANIC_NOTE) {
-                panic_all_voices(handle);
-            } else if (midi_packet.note == ARP_TOGGLE_NOTE) {
-                g_arp_enabled = !g_arp_enabled;
-                if (!g_arp_enabled) {
-                    /* leaving arp mode: un-mute every held voice */
-                    for (int i = 0; i < NUM_OSCILLATORS; i++) {
-                        if (oscillators[i].in_use) restore_voice_step(handle, i);
-                    }
-                }
-                printf("Arp %s\n", g_arp_enabled ? "ON" : "OFF");
-            } else if (find_note_slot(midi_packet.note) == -1) {
+            if (find_note_slot(midi_packet.note) == -1) {
                 int i = find_free_slot();
 
                 if (i >= 0) {
@@ -175,6 +150,19 @@ void *run_midi_reciever(void *arg){
                                      g_arp_enabled ? 0 : step,
                                      g_current_wavetable);
                 }
+            }
+
+        } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
+            /* Controller's panic button (CC 123 "All Notes Off") toggles arp. */
+            if (midi_packet.note == ARP_TOGGLE_CC) {
+                g_arp_enabled = !g_arp_enabled;
+                if (!g_arp_enabled) {
+                    /* leaving arp mode: un-mute every held voice */
+                    for (int i = 0; i < NUM_OSCILLATORS; i++) {
+                        if (oscillators[i].in_use) restore_voice_step(handle, i);
+                    }
+                }
+                printf("Arp %s\n", g_arp_enabled ? "ON" : "OFF");
             }
 
         } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
