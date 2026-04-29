@@ -5,45 +5,75 @@
  * Name/UNI: Henry Minsky (hm3121), Opalina Khanna (ok2373), Sunny Fang (yf2610)
  */
 #include "midi.h"
-#include "usbmidi.h"
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include<stdint.h>
+#include <unistd.h>
+#include <fcntl.h>
 
-struct libusb_device_handle *midi;
-uint8_t endpoint_address;
-
-struct libusb_device_handle *midi_open(uint8_t *endpoint_out) {
-    midi = open_midi(endpoint_out);
-    endpoint_address = *endpoint_out;
-    return midi;
+int midi_open(void){
+    char path[256];
+    for(int card = 0; card < 8; card++){
+        snprintf(path, sizeof(path), "/dev/snd/midiC%dD0",card);
+        int fd = open(path, O_RDONLY);
+        if(fd >= 0){
+            return fd;
+        }
+    }
+    fprintf(stderr, "midi open: no midi sound device found in /dev/snd\n");
+    return -1;
 }
 
-int midi_read(struct libusb_device_handle *midi,
-                uint8_t endpoint_address,
-                midi_event_t *evt) {
-    uint8_t buf[4];
-    int transferred;
-    int r = libusb_bulk_transfer(midi, endpoint_address,
-        buf, sizeof(buf),
-        &transferred, 500000);
-    if (r < 0) return r;
+int midi_read(int fd, midi_event_t *evt){
+    static uint8_t running_status;
 
-    evt->cable      = buf[0];
-    evt->status     = buf[1];
-    evt->note       = buf[2];
-    evt->velocity   = buf[3];
+    uint8_t byte;
 
-    printf("%02x %02x %02x %02x\n",
-        evt->cable,
-        evt->status,
-        evt->note,
-        evt->velocity
-    );
+    while(1){
 
-  return 0; 
+        if(read(fd,&byte,1) != 1){
+            return -1;
+        }
+
+        if(byte >= 0xF8){
+            continue;
+        }
+        if(byte >= 0xF0){
+            running_status = 0;
+            continue;
+        }
+
+        if (byte & 0x80){
+            evt->status = byte; 
+            running_status = byte;
+            if(read(fd,&evt->note,1)!= 1){
+                return -1;
+            }
+        }
+        else{
+            if(!(running_status & 0x80)){
+                continue;
+            }
+            evt->status = running_status;
+            evt->note = byte;
+        }
+
+        uint8_t kind = evt->status & 0xF0;
+        if(kind == 0xC0 || kind == 0xD0){
+            evt->attack = 0;
+        }
+        else{
+            if(read(fd, &evt->attack,1) != 1){
+                return -1;
+            }
+        }
+        return 0;
+    }
+
 }
 
-void midi_close(struct libusb_device_handle *midi) {
-    libusb_close(midi);
-    libusb_exit(NULL);
+void midi_close(int fd){
+    if(fd >= 0){
+        close(fd);
+    }
 }
