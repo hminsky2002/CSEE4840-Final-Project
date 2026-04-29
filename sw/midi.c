@@ -1,21 +1,79 @@
-#include <alsa/asoundlib.h>
+/*
+ *
+ * CSEE 4840 Final Project
+ *
+ * Name/UNI: Henry Minsky (hm3121), Opalina Khanna (ok2373), Sunny Fang (yf2610)
+ */
+#include "midi.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include<stdint.h>
+#include <unistd.h>
+#include <fcntl.h>
 
-int main() {
-    snd_seq_t *seq_handle;
-    snd_seq_open(&seq_handle, "default", SND_SEQ_OPEN_INPUT, 0);
-    snd_seq_set_client_name(seq_handle, "My MIDI Receiver");
-    int port_id = snd_seq_create_simple_port(seq_handle, "Input Port",
-                  SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
-                  SND_SEQ_PORT_TYPE_MIDI_GENERIC);
-
-    while (1) {
-        snd_seq_event_t *ev;
-        snd_seq_event_input(seq_handle, &ev);
-        if (ev->type == SND_SEQ_EVENT_NOTEON) {
-            printf("Note On: %d\n", ev->data.note.note);
+int midi_open(void){
+    char path[256];
+    for(int card = 0; card < 8; card++){
+        snprintf(path, sizeof(path), "/dev/snd/midiC%dD0",card);
+        int fd = open(path, O_RDONLY);
+        if(fd >= 0){
+            return fd;
         }
-        snd_seq_free_event(ev);
     }
-    return 0;
+    fprintf(stderr, "midi open: no midi sound device found in /dev/snd\n");
+    return -1;
+}
+
+int midi_read(int fd, midi_event_t *evt){
+    static uint8_t running_status;
+
+    uint8_t byte;
+
+    while(1){
+
+        if(read(fd,&byte,1) != 1){
+            return -1;
+        }
+
+        if(byte >= 0xF8){
+            continue;
+        }
+        if(byte >= 0xF0){
+            running_status = 0;
+            continue;
+        }
+
+        if (byte & 0x80){
+            evt->status = byte; 
+            running_status = byte;
+            if(read(fd,&evt->note,1)!= 1){
+                return -1;
+            }
+        }
+        else{
+            if(!(running_status & 0x80)){
+                continue;
+            }
+            evt->status = running_status;
+            evt->note = byte;
+        }
+
+        uint8_t kind = evt->status & 0xF0;
+        if(kind == 0xC0 || kind == 0xD0){
+            evt->attack = 0;
+        }
+        else{
+            if(read(fd, &evt->attack,1) != 1){
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+}
+
+void midi_close(int fd){
+    if(fd >= 0){
+        close(fd);
+    }
 }
