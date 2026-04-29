@@ -7,9 +7,9 @@ else
 
 default: module 
 module:
-	${MAKE} -C ${KERNEL_SOURCE} SUBDIRS=${PWD} modules 
+	${MAKE} -C ${KERNEL_SOURCE} M=${PWD} modules
 clean:
-	${MAKE} -C ${KERNEL_SOURCE} SUBDIRS=${PWD} clean
+	${MAKE} -C ${KERNEL_SOURCE} M=${PWD} clean
 
 .PHONY: default module clean 
 
