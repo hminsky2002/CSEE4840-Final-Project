@@ -7,3 +7,4 @@ sw/*.o
 *.qws
 *.bak
 *hpws_isw_handoff/
+__pycache__
