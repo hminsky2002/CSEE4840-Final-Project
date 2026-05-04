@@ -40,7 +40,7 @@ set_fileset_property QUARTUS_SYNTH TOP_LEVEL wave_table_synth
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file wave_table_synth.sv SYSTEM_VERILOG PATH wave_table_synth.sv TOP_LEVEL_FILE
-
+add_fileset_file oscillator.sv SYSTEM_VERILOG PATH oscillator.sv
 
 # 
 # parameters
@@ -119,7 +119,7 @@ add_interface_port avalon_slave_0 writedata writedata Input 16
 add_interface_port avalon_slave_0 readdata readdata Output 16
 add_interface_port avalon_slave_0 write write Input 1
 add_interface_port avalon_slave_0 chipselect chipselect Input 1
-add_interface_port avalon_slave_0 address address Input 3
+add_interface_port avalon_slave_0 address address Input 17
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isFlash 0
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isMemoryDevice 0
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isNonVolatileStorage 0
