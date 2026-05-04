@@ -29,9 +29,9 @@ module wave_table_synth (
 
     always_ff @(posedge clk) begin
         if (chipselect && write && in_wavetable) begin
-            wavetable_mem[address[14:0]] <= writedata;
+            wavetable_bram[address[14:0]] <= writedata;
         end
-        bram_rdata <= wavetable_mem[bram_raddr];
+        bram_rdata <= wavetable_bram[bram_raddr];
     end
 
     logic [15:0] step_size_reg [0:31];
@@ -41,7 +41,7 @@ module wave_table_synth (
     always_ff @(posedge clk) begin
         if (reset) begin
             for(int i = 0; i < 32; i++) begin 
-                step_size_reg[i] <= 16h'0;
+                step_size_reg[i] <= 16'h0;
                 ctrl_reg[i] <= 2'b00;
                 table_sel_reg[i] <= 2'h0;
             end
@@ -49,7 +49,7 @@ module wave_table_synth (
             case (reg_addr)
                 2'd0: step_size_reg[osc_addr] <= writedata;
                 2'd1: ctrl_reg[osc_addr] <= writedata[1:0];
-                2'd2: table_sel_reg[voice_addr] <= writedata[1:0];
+                2'd2: table_sel_reg[osc_addr] <= writedata[1:0];
                 2'd3: ; /* nada */
             endcase
         end
@@ -62,7 +62,7 @@ module wave_table_synth (
     logic sweep_active;
     logic sweep_done;
 
-    wire sample_tick = sink_ready && !sweep_active_active && !sample_valid;
+    wire sample_tick = sink_ready && !sweep_active && !sample_valid;
 
     always_ff @(posedge clk) begin
         if(reset) begin
@@ -87,11 +87,45 @@ module wave_table_synth (
         .ctrl         (ctrl_reg),
         .bram_rdata   (bram_rdata),
         .bram_raddr   (bram_raddr),
-        .voice_sample (osc_sample),
-        .voice_idx    (osc_idx),
-        .voice_valid  (osc_valid),
+        .osc_sample (osc_sample),
+        .osc_idx    (osc_idx),
+        .osc_valid  (osc_valid),
         .sweep_done   (sweep_done)
     );
 
+    logic signed [31:0] mix_acc;
+
+    always_ff @(posedge clk) begin
+        if(reset) begin 
+            mix_acc <= '0;
+            sample <= 16'h0;
+        end else begin 
+            if (sample_tick) begin 
+                mix_acc <= '0;
+            end else if (osc_valid) begin 
+                //sign extension nonsense that i don't understand
+                mix_acc <= mix_acc + $signed({{16{osc_sample[15]}}, osc_sample});
+            end 
+
+            if (sweep_done) begin
+                if (mix_acc > 32'sd32767) begin
+                    sample <= 16'h7FFF;
+                end else if (mix_acc < -32'sd32768) begin
+                    sample <= 16'h8000;
+                end else begin 
+                    sample <= mix_acc[15:0];
+                end
+            end
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if(reset) begin 
+            sample_valid <= 1'b0;
+        end else begin 
+            sample_valid <= sweep_done;
+        end
+    end
+    
 
 endmodule
