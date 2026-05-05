@@ -30,7 +30,7 @@ def load_wav_mono_i16(path):
     return frames, rate 
 
 
-TABLE_SIZE = 8192
+SLOT_SIZE = 8192
 MAX_SLOTS = 4
 TARGET_RATE = 48000
 
@@ -67,7 +67,7 @@ if len(paths) > MAX_SLOTS:
 with open(args.output, "wb") as out:
     for slot, p in enumerate(paths):
         raw, rate = load_wav_mono_i16(p)
-        out.write(struct.pack("<{}h".format(TABLE_SIZE), *raw))
+        out.write(struct.pack("<{}h".format(SLOT_SIZE), *raw))
         print("slot {}: {} ({} Hz, {} samples)".format(slot,p,rate,len(raw)))
 
 print("Wrote {} slot(s) to {}".format(len(paths),args.output))

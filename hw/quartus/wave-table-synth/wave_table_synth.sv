@@ -13,8 +13,8 @@ module wave_table_synth (
 );
 
 
-    wire in_wavetable = (address[17] == 1'b1);
-    wire in_osc_region = (address[17] == 1'b0);
+    wire in_wavetable = (address[17] == 1'b0);
+    wire in_osc_region = (address[17] == 1'b1);
     wire in_osc_registers = in_osc_region && (address[16:7] == 10'h000);
 
     wire [4:0] osc_addr = address[6:2];

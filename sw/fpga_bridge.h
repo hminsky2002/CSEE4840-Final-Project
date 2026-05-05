@@ -4,18 +4,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define WAVE_SYNTH_PERIPHERAL_BYTES 0x40000
+#define WAVE_SYNTH_PERIPHERAL_BYTES 0x80000
 
-#define OSC_STEP(v) (0x8000u + (v) * 4u + 0u)
-#define OSC_CTRL(v) (0x8000u + (v) * 4u + 1u)
-#define OSC_TABLE(v) (0x8000u + (v) * 4u + 2u)
-#define AMP_CTRL 0x8080u
+#define OSC_STEP(v) (0x20000u + (v) * 4u + 0u)
+#define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
+#define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
 
 
-#define TABLE_SIZE 8192
+#define SLOT_SIZE  32768
 #define NUM_TABLE_SLOTS 4
 
-#define WAVETABLE_WORD(slot,sample) (((slot)* TABLE_SIZE) + (sample))
+#define WAVETABLE_WORD(slot,sample) (((slot)* SLOT_SIZE) + (sample))
 
 #define CTRL_IDLE   0x0000u
 #define CTRL_STOP   0x0001u
