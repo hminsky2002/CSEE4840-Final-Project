@@ -6,7 +6,7 @@ module oscillator(
     input logic [1:0] table_sel[0:31],
     input logic [1:0] ctrl [0:31],
     input logic [15:0] bram_rdata,
-    output logic [14:0] bram_raddr,
+    output logic [16:0] bram_raddr,
     output logic [15:0] osc_sample,
     output logic [4:0] osc_idx,
     output logic osc_valid,
@@ -29,7 +29,7 @@ module oscillator(
             sweep_done <= 1'b0;
             osc_sample <= 16'h0;
             osc_idx <= 5'h0;
-            bram_raddr <= 15'h0;
+            bram_raddr <= 17'h0;
             for (int i = 0; i < 32; i++) begin 
                 phase[i] <= 24'h0;
             end
@@ -47,7 +47,7 @@ module oscillator(
 
                 RUNNING: begin
                     if(step < 6'd32) begin
-                        bram_raddr <= { table_sel[step[4:0]], phase[step[4:0]][23:11]};
+                        bram_raddr <= { table_sel[step[4:0]], phase[step[4:0]][23:9]};
                     end
 
                     if (step > 6'd1) begin 
