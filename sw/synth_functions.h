@@ -19,5 +19,7 @@ struct oscillator {
 
 uint16_t note_to_step_size(uint8_t note);
 
+int osc_find_free_slot( struct oscillator *oscillators);
+int osc_find_note_slot( struct oscillator *oscillators, uint8_t note);
 
 #endif

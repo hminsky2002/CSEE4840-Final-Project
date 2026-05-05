@@ -4,6 +4,17 @@
 #include "synth_functions.h"
 
 
+
+int osc_find_note_slot( struct oscillator *oscillators, uint8_t note){
+    for(int i = 0; i < NUM_OSCILLATORS; i++){
+        if(oscillators[i].in_use && oscillators[i].note == note){
+            return i;
+        }
+    }
+    return -1;
+}
+
+
 int osc_find_free_slot( struct oscillator *oscillators){
     for(int i = 0; i < NUM_OSCILLATORS; i++){
         if(!oscillators[i].in_use){
