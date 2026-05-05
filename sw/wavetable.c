@@ -11,22 +11,22 @@ int load_wavetable_bin(const char *path, peripheral *lw_bus){
         return -1;
     }
 
-    int16_t slot_buf[TABLE_SIZE];
+    int16_t slot_buf[SLOT_SIZE];
     int slot = 0;
 
     while(slot < NUM_TABLE_SLOTS){
-        size_t tableslot = fread(slot_buf, sizeof(int16_t),TABLE_SIZE, f);
+        size_t tableslot = fread(slot_buf, sizeof(int16_t),SLOT_SIZE, f);
 
         if(tableslot == 0){
             break;
         }
 
-        if (tableslot != TABLE_SIZE){
+        if (tableslot != SLOT_SIZE){
             fprintf(stderr,"wavetable binary file is malformed, wrong number of samples read");
             fclose(f);
             return -1;
         }
-        fpga_load_slot(lw_bus,slot,slot_buf,TABLE_SIZE);
+        fpga_load_slot(lw_bus,slot,slot_buf,SLOT_SIZE);
         printf("slot %d: loaded\n", slot);
         slot++;
     }

@@ -26,7 +26,6 @@ int fpga_init(peripheral *lw_bus) {
   }
 
   fpga_kill_voices(lw_bus);
-  lw_bus->regs[AMP_CTRL] = 127;
   return 0;
 }
 
@@ -105,8 +104,8 @@ int fpga_load_slot(peripheral *lw_bus, int slot, const int16_t *samples,
   if (!samples || n <= 0) {
     return -1;
   }
-  if(n > TABLE_SIZE){
-    n = TABLE_SIZE;
+  if(n > SLOT_SIZE){
+    n = SLOT_SIZE;
   }
 
   for(int i = 0; i < n; i++){
@@ -114,7 +113,7 @@ int fpga_load_slot(peripheral *lw_bus, int slot, const int16_t *samples,
   }
 
   
-  for (int i = n; i < TABLE_SIZE; i++){
+  for (int i = n; i < SLOT_SIZE; i++){
     lw_bus->regs[WAVETABLE_WORD(slot, i)] = 0;
   }
 
