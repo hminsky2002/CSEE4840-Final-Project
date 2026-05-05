@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <pthread.h>
 
 // our global array to track our oscillator states!
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
@@ -75,4 +76,11 @@ int main(int argc, char **argv) {
   if (loaded <= 0) {
     fprintf(stderr, "No wavetables loaded, check validity of %s \n", argv[1]);
   }
+
+  pthread_t midi_thread;
+
+  pthread_create(&midi_thread, NULL, run_midi_reciever, &lw_bus);
+
+  pthread_join(midi_thread,NULL);
+  return 0;
 }
