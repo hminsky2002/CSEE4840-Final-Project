@@ -24,21 +24,12 @@
 
 
 #define SAMPLE_RATE 48000
-#define NUM_VOICES 32
+#define NUM_OSCILLATORS 32
 
 typedef struct {
     volatile uint16_t *regs;
     int fd;
 } peripheral;
-
-
-struct oscillator {
-    uint16_t step_size;
-    uint16_t control;
-    uint16_t wavetable;
-    uint16_t resolution;
-    uint8_t note;
-};
 
 int fpga_init(peripheral *lw_bus);
 void fpga_kill_voices(peripheral *lw_bus);

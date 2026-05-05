@@ -31,7 +31,7 @@ int fpga_init(peripheral *lw_bus) {
 }
 
 void fpga_kill_voices(peripheral *lw_bus) {
-  for (int i = 0; i < NUM_VOICES; i++) {
+  for (int i = 0; i < NUM_OSCILLATORS; i++) {
     lw_bus->regs[OSC_CTRL(i)] = CTRL_STOP;
   }
 }
@@ -49,21 +49,21 @@ void fpga_cleanup(peripheral *lw_bus) {
 }
 
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size) {
-  if (voice < 0 || voice >= NUM_VOICES) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
     return;
   }
   lw_bus->regs[OSC_STEP(voice)] = step_size;
 }
 
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl) {
-  if (voice < 0 || voice >= NUM_VOICES) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
     return;
   }
   lw_bus->regs[OSC_CTRL(voice)] = ctrl;
 }
 
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot) {
-  if (voice < 0 || voice >= NUM_VOICES) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
     return;
   }
   if (slot >= NUM_TABLE_SLOTS) {
@@ -74,7 +74,7 @@ void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot) {
 
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot) {
-  if (voice < 0 || voice >= NUM_VOICES) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
     return;
   }
   if (slot >= NUM_TABLE_SLOTS) {
@@ -91,7 +91,7 @@ void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
 }
 
 void fpga_kill_voice(peripheral *lw_bus, int voice) {
-  if (voice < 0 || voice >= NUM_VOICES) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
     return;
   }
   lw_bus->regs[OSC_CTRL(voice)] = CTRL_STOP;
