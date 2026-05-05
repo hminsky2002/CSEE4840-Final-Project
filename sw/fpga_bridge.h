@@ -6,9 +6,12 @@
 
 #define WAVE_SYNTH_PERIPHERAL_BYTES 0x80000
 
-#define OSC_STEP(v) (0x20000u + (v) * 4u + 0u)
-#define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
-#define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
+#define OSC_STEP(v)  (0x20000u + (v) * 8u + 0u)
+#define OSC_CTRL(v)  (0x20000u + (v) * 8u + 1u)
+#define OSC_TABLE(v) (0x20000u + (v) * 8u + 2u)
+#define OSC_AMP(v)   (0x20000u + (v) * 8u + 3u)
+
+#define AMP_UNITY 0xFFFFu
 
 
 #define SLOT_SIZE  32768
@@ -36,8 +39,9 @@ void fpga_cleanup(peripheral *lw_bus);
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size);
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
+void fpga_set_amp(peripheral *lw_bus, int voice, uint16_t amp);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
-                      uint16_t slot);
+                      uint16_t slot, uint16_t amp);
 void fpga_kill_voice(peripheral *lw_bus, int voice);
 int fpga_load_slot(peripheral *lw_bus, int slot, const int16_t *samples,
                    int n);

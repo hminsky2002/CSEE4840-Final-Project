@@ -71,8 +71,15 @@ void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot) {
   lw_bus->regs[OSC_TABLE(voice)] = slot;
 }
 
+void fpga_set_amp(peripheral *lw_bus, int voice, uint16_t amp) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
+    return;
+  }
+  lw_bus->regs[OSC_AMP(voice)] = amp;
+}
+
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
-                      uint16_t slot) {
+                      uint16_t slot, uint16_t amp) {
   if (voice < 0 || voice >= NUM_OSCILLATORS) {
     return;
   }
@@ -81,6 +88,7 @@ void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
   }
   lw_bus->regs[OSC_STEP(voice)] = step_size;
   lw_bus->regs[OSC_TABLE(voice)] = slot;
+  lw_bus->regs[OSC_AMP(voice)] = amp;
   lw_bus->regs[OSC_CTRL(voice)] = CTRL_RESET;
 
   struct timespec delay = {0, 200 * 1000L};
