@@ -1,7 +1,7 @@
 # COMPILER SETTINGS
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Werror -g
-LDFLAGS = -lm -lusb-1.0 -pthread
+LDFLAGS = -lm -pthread
 
 ifdef WAVETABLE_FILE
 # usage: make WAVETABLE_FILE=/path/to/wavetable.bin 
