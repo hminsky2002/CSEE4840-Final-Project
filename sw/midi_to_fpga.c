@@ -77,7 +77,6 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  fpga_set_amp(&lw_bus, 0xFF);
   int loaded = load_wavetable_bin(argv[1], &lw_bus);
 
   if (loaded <= 0) {
