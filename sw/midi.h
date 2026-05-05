@@ -16,6 +16,8 @@ typedef struct {
 #define MIDI_PROGRAM_CHANGE 0xC0
 #define MIDI_PITCH_BEND 0xE0
 
+#define MIDI_CC_VOLUME 0x07
+
 #define MIDI_STATUS_MASK 0xF0
 #define MIDI_CHANNEL_MASK 0x0F
 

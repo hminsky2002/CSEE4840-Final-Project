@@ -56,6 +56,11 @@ void *run_midi_reciever(void *arg) {
         fpga_kill_voice(lw_bus, i);
       }
     }
+    else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
+      if (midi_packet.note == MIDI_CC_VOLUME) {
+        fpga_set_amp(lw_bus, midi_packet.attack << 1);
+      }
+    }
   }
   return NULL;
 }
