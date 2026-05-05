@@ -30,7 +30,7 @@ def load_wav_mono_i16(path):
     return frames, rate 
 
 
-SLOT_SIZE = 8192
+SLOT_SIZE = 32768
 MAX_SLOTS = 4
 TARGET_RATE = 48000
 
