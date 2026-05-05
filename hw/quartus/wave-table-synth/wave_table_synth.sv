@@ -8,7 +8,7 @@ module wave_table_synth (
     input logic [17:0]  address,
     input  logic        ready_left,
     input  logic        ready_right,
-    output logic [15:0] sample,
+    output logic signed [23:0] sample,
     output logic        sample_valid
 );
 
@@ -16,6 +16,7 @@ module wave_table_synth (
     wire in_wavetable = (address[17] == 1'b0);
     wire in_osc_region = (address[17] == 1'b1);
     wire in_osc_registers = in_osc_region && (address[16:7] == 10'h000);
+    wire in_global_registers = in_osc_region && (address[16:7] == 10'h001);
 
     wire [4:0] osc_addr = address[6:2];
     wire [1:0] reg_addr = address[1:0];
@@ -37,14 +38,16 @@ module wave_table_synth (
     logic [15:0] step_size_reg [0:31];
     logic [1:0] ctrl_reg [0:31];
     logic [1:0] table_sel_reg [0:31];
+    logic [7:0] amp_ctrl_reg;
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            for(int i = 0; i < 32; i++) begin 
+            for(int i = 0; i < 32; i++) begin
                 step_size_reg[i] <= 16'h0;
                 ctrl_reg[i] <= 2'b00;
                 table_sel_reg[i] <= 2'h0;
             end
+            amp_ctrl_reg <= 8'h00;
         end else if (chipselect && write && in_osc_registers) begin
             case (reg_addr)
                 2'd0: step_size_reg[osc_addr] <= writedata;
@@ -52,6 +55,10 @@ module wave_table_synth (
                 2'd2: table_sel_reg[osc_addr] <= writedata[1:0];
                 2'd3: ; /* nada */
             endcase
+        end else if (chipselect && write && in_global_registers) begin
+            if (address[6:0] == 7'd0) begin
+                amp_ctrl_reg <= writedata[7:0];
+            end
         end
     end
 
@@ -94,27 +101,32 @@ module wave_table_synth (
     );
 
     logic signed [31:0] mix_acc;
+    logic signed [15:0] sat16;
+
+    always_comb begin
+        if (mix_acc > 32'sd32767) begin
+            sat16 = 16'sh7FFF;
+        end else if (mix_acc < -32'sd32768) begin
+            sat16 = -16'sd32768;
+        end else begin
+            sat16 = mix_acc[15:0];
+        end
+    end
 
     always_ff @(posedge clk) begin
-        if(reset) begin 
+        if(reset) begin
             mix_acc <= '0;
-            sample <= 16'h0;
-        end else begin 
-            if (sample_tick) begin 
+            sample <= 24'sd0;
+        end else begin
+            if (sample_tick) begin
                 mix_acc <= '0;
-            end else if (osc_valid) begin 
+            end else if (osc_valid) begin
                 //sign extension nonsense that i don't understand
                 mix_acc <= mix_acc + $signed({{16{osc_sample[15]}}, osc_sample});
-            end 
+            end
 
             if (sweep_done) begin
-                if (mix_acc > 32'sd32767) begin
-                    sample <= 16'h7FFF;
-                end else if (mix_acc < -32'sd32768) begin
-                    sample <= 16'h8000;
-                end else begin 
-                    sample <= mix_acc[15:0];
-                end
+                sample <= sat16 * $signed({1'b0, amp_ctrl_reg});
             end
         end
     end

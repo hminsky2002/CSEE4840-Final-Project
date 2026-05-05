@@ -71,6 +71,10 @@ void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot) {
   lw_bus->regs[OSC_TABLE(voice)] = slot;
 }
 
+void fpga_set_amp(peripheral *lw_bus, uint8_t amp) {
+  lw_bus->regs[GLOBAL_AMP_CTRL] = amp;
+}
+
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot) {
   if (voice < 0 || voice >= NUM_OSCILLATORS) {

@@ -296,7 +296,7 @@ module soc_system_top(
 
 	logic ready_left;
 	logic ready_right;
-	logic [15:0] sample;
+	logic signed [23:0] sample;
 	logic sample_valid;
 
    assign ADC_CS_N = SW[1] ? SW[0] : 1'bZ;
@@ -325,7 +325,7 @@ module soc_system_top(
 
    assign IRDA_TXD = SW[0];
 
-   assign LEDR = {sample[15:7], sample_valid};
+   assign LEDR = {sample[23:15], sample_valid};
 
    assign PS2_CLK = SW[1] ? SW[0] : 1'bZ;
    assign PS2_CLK2 = SW[1] ? SW[0] : 1'bZ;

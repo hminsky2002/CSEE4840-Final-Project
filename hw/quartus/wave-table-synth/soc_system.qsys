@@ -155,7 +155,7 @@
   <parameter name="audio_in" value="false" />
   <parameter name="audio_out" value="true" />
   <parameter name="avalon_bus_type" value="Streaming" />
-  <parameter name="dw" value="16" />
+  <parameter name="dw" value="24" />
  </module>
  <module
    name="audio_and_video_config_0"

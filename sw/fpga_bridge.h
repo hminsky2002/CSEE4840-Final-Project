@@ -10,6 +10,8 @@
 #define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
 #define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
 
+#define GLOBAL_AMP_CTRL 0x20080u
+
 
 #define SLOT_SIZE  32768
 #define NUM_TABLE_SLOTS 4
@@ -36,6 +38,7 @@ void fpga_cleanup(peripheral *lw_bus);
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size);
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
+void fpga_set_amp(peripheral *lw_bus, uint8_t amp);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot);
 void fpga_kill_voice(peripheral *lw_bus, int voice);
