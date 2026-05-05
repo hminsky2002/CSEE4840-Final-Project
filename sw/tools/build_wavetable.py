@@ -12,7 +12,7 @@ def load_wav_mono_i16(path):
         rate = w.getframerate()
         n_frames = w.getnframes()
         raw = w.readframes(n_frames)
-    
+
     if channels not in (1,2):
         raise ValueError("unsupported channel count ")
     if samp_width not in (1,2):
@@ -26,7 +26,7 @@ def load_wav_mono_i16(path):
     
     if channels == 2:
         frames = [(frames[i] + frames[i+1]) // 2 for i in range(0,len(frames),2)]
-        
+    
     return frames, rate 
 
 
@@ -37,7 +37,7 @@ TARGET_RATE = 48000
 
 ap = argparse.ArgumentParser(description="takes in newline seperated text file of wavs and converts into a binary")
 ap.add_argument("manifest")
-ap.add_argument("-o", default="wavetable.bin")
+ap.add_argument("-o", "--output", default="wavetable.bin")
 
 args = ap.parse_args()
 
@@ -67,8 +67,7 @@ if len(paths) > MAX_SLOTS:
 with open(args.output, "wb") as out:
     for slot, p in enumerate(paths):
         raw, rate = load_wav_mono_i16(p)
-        samples = raw 
-        out.write(struct.pack("<{}h".format(TABLE_SIZE)), *samples)
+        out.write(struct.pack("<{}h".format(TABLE_SIZE), *raw))
         print("slot {}: {} ({} Hz, {} samples)".format(slot,p,rate,len(raw)))
 
 print("Wrote {} slot(s) to {}".format(len(paths),args.output))
