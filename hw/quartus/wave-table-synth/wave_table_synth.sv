@@ -47,7 +47,7 @@ module wave_table_synth (
                 ctrl_reg[i] <= 2'b00;
                 table_sel_reg[i] <= 2'h0;
             end
-            amp_ctrl_reg <= 8'h00;
+            amp_ctrl_reg <= 8'hFF;
         end else if (chipselect && write && in_osc_registers) begin
             case (reg_addr)
                 2'd0: step_size_reg[osc_addr] <= writedata;
