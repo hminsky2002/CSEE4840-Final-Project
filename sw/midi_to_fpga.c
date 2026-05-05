@@ -57,6 +57,7 @@ void *run_midi_reciever(void *arg) {
       }
     }
     else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
+      fprintf(stderr, "CC: cc=%u val=%u\n", midi_packet.note, midi_packet.attack);
       if (midi_packet.note == MIDI_CC_VOLUME) {
         fpga_set_amp(lw_bus, midi_packet.attack << 1);
       }
@@ -76,6 +77,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  fpga_set_amp(&lw_bus, 0xFF);
   int loaded = load_wavetable_bin(argv[1], &lw_bus);
 
   if (loaded <= 0) {

@@ -142,5 +142,5 @@ set_interface_property wave_table SVD_ADDRESS_GROUP ""
 add_interface_port wave_table sample_valid synth_sample_valid Output 1
 add_interface_port wave_table ready_left synth_ready_left Input 1
 add_interface_port wave_table ready_right synth_ready_right Input 1
-add_interface_port wave_table sample synth_sample Output 16
+add_interface_port wave_table sample synth_sample Output 24
 
