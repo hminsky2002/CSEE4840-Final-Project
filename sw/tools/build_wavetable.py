@@ -33,13 +33,24 @@ def load_wav_mono_i16(path):
 SLOT_SIZE = 32768
 MAX_SLOTS = 4
 TARGET_RATE = 48000
+DEFAULT_PEAK = 0x4000  # half-scale; one bit of polyphony headroom against the mix saturator
 
 
 ap = argparse.ArgumentParser(description="takes in newline seperated text file of wavs and converts into a binary")
 ap.add_argument("manifest")
 ap.add_argument("-o", "--output", default="wavetable.bin")
+ap.add_argument("--peak", type=lambda s: int(s, 0), default=DEFAULT_PEAK,
+                help="per-slot normalized peak amplitude (default 0x%X = half-scale)" % DEFAULT_PEAK)
 
 args = ap.parse_args()
+
+
+def normalize_to_peak(frames, target_peak):
+    cur_peak = max((abs(s) for s in frames), default=0)
+    if cur_peak == 0:
+        return frames
+    scale = target_peak / cur_peak
+    return [max(-32768, min(32767, int(round(s * scale)))) for s in frames]
 
 
 manifest_path = args.manifest 
@@ -67,7 +78,14 @@ if len(paths) > MAX_SLOTS:
 with open(args.output, "wb") as out:
     for slot, p in enumerate(paths):
         raw, rate = load_wav_mono_i16(p)
-        out.write(struct.pack("<{}h".format(SLOT_SIZE), *raw))
-        print("slot {}: {} ({} Hz, {} samples)".format(slot,p,rate,len(raw)))
+        src_peak = max((abs(s) for s in raw), default=0)
+        scaled = normalize_to_peak(raw, args.peak)
+        if len(scaled) < SLOT_SIZE:
+            scaled = scaled + [0] * (SLOT_SIZE - len(scaled))
+        else:
+            scaled = scaled[:SLOT_SIZE]
+        out.write(struct.pack("<{}h".format(SLOT_SIZE), *scaled))
+        print("slot {}: {} ({} Hz, {} samples, src peak {} -> {})".format(
+            slot, p, rate, len(raw), src_peak, args.peak))
 
 print("Wrote {} slot(s) to {}".format(len(paths),args.output))
