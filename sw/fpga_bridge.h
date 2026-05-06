@@ -12,6 +12,7 @@
 #define OSC_AMP(v)   (0x20000u + (v) * 8u + 3u)
 
 #define AMP_UNITY 0xFFFFu
+#define AMP_DEFAULT 0x4000u  /* quarter scale: ~4 voices before clipping */
 
 
 #define SLOT_SIZE  32768
