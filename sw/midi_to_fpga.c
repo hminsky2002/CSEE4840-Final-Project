@@ -15,7 +15,7 @@
 // our global array to track our oscillator states!
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
-static uint16_t global_amp = AMP_DEFAULT;
+static uint16_t global_amp = AMP_UNITY;
 
 static int note_to_slot(uint8_t note) {
     if (note < 48) return 0;   /* C0–B2: 128 harmonics */
@@ -25,6 +25,21 @@ static int note_to_slot(uint8_t note) {
 }
 
 #define MIDI_CC_VOLUME 7
+
+static void rebalance_voices(peripheral *lw_bus) {
+  int n = 0;
+  for (int v = 0; v < NUM_OSCILLATORS; v++) {
+    if (oscillators[v].in_use) n++;
+  }
+  if (n == 0) return;
+  uint16_t amp = global_amp / (uint16_t)n;
+  for (int v = 0; v < NUM_OSCILLATORS; v++) {
+    if (oscillators[v].in_use) {
+      oscillators[v].amplitude = amp;
+      fpga_set_amp(lw_bus, v, amp);
+    }
+  }
+}
 
 void *run_midi_reciever(void *arg) {
   peripheral *lw_bus = (peripheral *)arg;
@@ -56,14 +71,14 @@ void *run_midi_reciever(void *arg) {
 
       if (i >= 0) {
         uint16_t step = note_to_step_size(midi_packet.note);
+        int slot = note_to_slot(midi_packet.note);
         oscillators[i].note = midi_packet.note;
         oscillators[i].step_size = step;
-        int slot = note_to_slot(midi_packet.note);
         oscillators[i].wavetable_slot = slot;
-        oscillators[i].amplitude = global_amp;
         oscillators[i].in_use = true;
 
-        fpga_voice_start(lw_bus, i, step, slot, global_amp);
+        rebalance_voices(lw_bus);
+        fpga_voice_start(lw_bus, i, step, slot, oscillators[i].amplitude);
       }
 
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF ||
@@ -77,17 +92,13 @@ void *run_midi_reciever(void *arg) {
         oscillators[i].wavetable_slot = 0;
         oscillators[i].amplitude = 0;
         fpga_kill_voice(lw_bus, i);
+        rebalance_voices(lw_bus);
       }
 
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
       if (midi_packet.note == MIDI_CC_VOLUME) {
         global_amp = (uint16_t)midi_packet.attack << 9;
-        for (int v = 0; v < NUM_OSCILLATORS; v++) {
-          if (oscillators[v].in_use) {
-            oscillators[v].amplitude = global_amp;
-            fpga_set_amp(lw_bus, v, global_amp);
-          }
-        }
+        rebalance_voices(lw_bus);
       }
     }
   }
