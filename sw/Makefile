@@ -19,7 +19,7 @@ MIDI_SRCS = midi_to_fpga.c wavetable.c midi.c fpga_bridge.c synth_functions.c
 MIDI_OBJS = $(MIDI_SRCS:.c=.o)
 
 # hex_test sources
-HEX_SRCS = hex_test.c
+HEX_SRCS = hex_test.c fpga_bridge.c
 HEX_OBJS = $(HEX_SRCS:.c=.o)
 
 # DEFAULT TARGET
