@@ -289,6 +289,13 @@ module soc_system_top(
 	  .wave_table_synth_0_wave_table_synth_sample_valid ( sample_valid ),
 	  .wave_table_synth_0_wave_table_synth_ready_left   ( ready_left   ),
 	  .wave_table_synth_0_wave_table_synth_ready_right  ( ready_right  ),
+
+	  .wave_table_synth_0_hex_hex0 ( HEX0 ),
+	  .wave_table_synth_0_hex_hex1 ( HEX1 ),
+	  .wave_table_synth_0_hex_hex2 ( HEX2 ),
+	  .wave_table_synth_0_hex_hex3 ( HEX3 ),
+	  .wave_table_synth_0_hex_hex4 ( HEX4 ),
+	  .wave_table_synth_0_hex_hex5 ( HEX5 ),
   );
 
    // The following quiet the "no driver" warnings for output
@@ -316,12 +323,7 @@ module soc_system_top(
    assign GPIO_0 = SW[1] ? { 36{ SW[0] } } : { 36{ 1'bZ } };
    assign GPIO_1 = SW[1] ? { 36{ SW[0] } } : { 36{ 1'bZ } };   
 
-   assign HEX0 = { 7{ SW[1] } };
-   assign HEX1 = { 7{ SW[2] } };
-   assign HEX2 = { 7{ SW[3] } };
-   assign HEX3 = { 7{ SW[4] } };
-   assign HEX4 = { 7{ SW[5] } };
-   assign HEX5 = { 7{ SW[6] } };
+   // HEX0..HEX5 driven by wave_table_synth_0 hex conduit
 
    assign IRDA_TXD = SW[0];
 

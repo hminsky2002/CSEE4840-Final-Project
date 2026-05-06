@@ -6,6 +6,36 @@
 
 #define WAVE_SYNTH_PERIPHERAL_BYTES 0x80000
 
+#define OSC_STEP(v)  (0x20000u + (v) * 8u + 0u)
+#define OSC_CTRL(v)  (0x20000u + (v) * 8u + 1u)
+#define OSC_TABLE(v) (0x20000u + (v) * 8u + 2u)
+#define OSC_AMP(v)   (0x20000u + (v) * 8u + 3u)
+
+#define HEX_REG(i)   (0x20100u + (i))
+
+/* DE1-SoC HEX segments are active-low. bit order: gfedcba */
+#define SEG_BLANK 0x7Fu
+#define SEG_0 0x40u
+#define SEG_1 0x79u
+#define SEG_2 0x24u
+#define SEG_3 0x30u
+#define SEG_4 0x19u
+#define SEG_5 0x12u
+#define SEG_6 0x02u
+#define SEG_7 0x78u
+#define SEG_8 0x00u
+#define SEG_9 0x10u
+#define SEG_A 0x08u
+#define SEG_B 0x03u
+#define SEG_C 0x46u
+#define SEG_D 0x21u
+#define SEG_E 0x06u
+#define SEG_F 0x0Eu
+#define SEG_G 0x10u
+#define SEG_S 0x12u
+
+#define AMP_UNITY 0xFFFFu
+#define AMP_DEFAULT 0x4000u  /* quarter scale: ~4 voices before clipping */
 #define OSC_STEP(v) (0x20000u + (v) * 4u + 0u)
 #define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
 #define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
@@ -36,6 +66,7 @@ void fpga_cleanup(peripheral *lw_bus);
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size);
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
+void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot);
 void fpga_kill_voice(peripheral *lw_bus, int voice);

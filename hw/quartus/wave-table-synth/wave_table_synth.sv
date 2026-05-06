@@ -9,16 +9,38 @@ module wave_table_synth (
     input  logic        ready_left,
     input  logic        ready_right,
     output logic [15:0] sample,
-    output logic        sample_valid
+    output logic        sample_valid,
+    output logic [6:0]  hex0,
+    output logic [6:0]  hex1,
+    output logic [6:0]  hex2,
+    output logic [6:0]  hex3,
+    output logic [6:0]  hex4,
+    output logic [6:0]  hex5
 );
 
 
     wire in_wavetable = (address[17] == 1'b0);
     wire in_osc_region = (address[17] == 1'b1);
     wire in_osc_registers = in_osc_region && (address[16:7] == 10'h000);
+    wire in_hex_registers = in_osc_region && (address[16:8] == 9'h001);
 
     wire [4:0] osc_addr = address[6:2];
     wire [1:0] reg_addr = address[1:0];
+    wire [2:0] hex_addr = address[2:0];
+
+    seven_segment_display u_seven_segment (
+        .clk    (clk),
+        .reset  (reset),
+        .write  (chipselect && write && in_hex_registers),
+        .addr   (hex_addr),
+        .data   (writedata[6:0]),
+        .hex0   (hex0),
+        .hex1   (hex1),
+        .hex2   (hex2),
+        .hex3   (hex3),
+        .hex4   (hex4),
+        .hex5   (hex5)
+    );
 
 
     (* ramstyle = "M10K" *) logic [15:0] wavetable_bram [0:131071];
