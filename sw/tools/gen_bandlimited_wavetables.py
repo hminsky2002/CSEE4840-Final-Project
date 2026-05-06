@@ -22,7 +22,7 @@ SLOT_SIZE  = 32768
 NUM_SLOTS  = 4
 DEFAULT_PEAK = 0x4000   # quarter full-scale, matches AMP_DEFAULT in fpga_bridge.h
 
-SLOT_HARMONICS = [128, 32, 8, 4]
+SLOT_HARMONICS = [16, 12, 8, 4]
 
 ap = argparse.ArgumentParser(description=__doc__,
                              formatter_class=argparse.RawDescriptionHelpFormatter)

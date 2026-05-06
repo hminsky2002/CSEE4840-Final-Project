@@ -9,7 +9,7 @@ ifdef WAVETABLE_FILE
 endif
 
 # TARGETS
-TARGET  = midi_to_fpga hex_test
+TARGET  = midi_to_fpga
 
 # SOURCES AND HEADERS
 DEPS = wavetable.h midi.h fpga_bridge.h synth_functions.h
@@ -17,10 +17,6 @@ DEPS = wavetable.h midi.h fpga_bridge.h synth_functions.h
 # midi_to_fpga sources
 MIDI_SRCS = midi_to_fpga.c wavetable.c midi.c fpga_bridge.c synth_functions.c
 MIDI_OBJS = $(MIDI_SRCS:.c=.o)
-
-# hex_test sources
-HEX_SRCS = hex_test.c fpga_bridge.c
-HEX_OBJS = $(HEX_SRCS:.c=.o)
 
 # DEFAULT TARGET
 all: $(TARGET)
@@ -31,11 +27,8 @@ all: $(TARGET)
 midi_to_fpga: $(MIDI_OBJS)
 	$(CC) $(CFLAGS) $(MIDI_OBJS) -o $@ $(LDFLAGS)
 
-hex_test: $(HEX_OBJS)
-	$(CC) $(CFLAGS) $(HEX_OBJS) -o $@ $(LDFLAGS)
-
 clean:
-	rm -f $(MIDI_OBJS) $(HEX_OBJS) $(TARGET)
+	rm -f $(MIDI_OBJS) $(TARGET)
 
 # PHONY TARGET
 .PHONY: all clean
