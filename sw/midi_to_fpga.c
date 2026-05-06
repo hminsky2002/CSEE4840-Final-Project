@@ -35,7 +35,7 @@ void *run_midi_reciever(void *arg) {
       continue;
     }
 
-    if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON) {
+    if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON && midi_packet.attack != 0) {
       int i = osc_find_free_slot(oscillators);
 
       if (i >= 0) {
@@ -49,7 +49,8 @@ void *run_midi_reciever(void *arg) {
         fpga_voice_start(lw_bus, i, step, global_wavetable, global_amp);
       }
 
-    } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
+    } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF ||
+               ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON && midi_packet.attack == 0)) {
       int i = osc_find_note_slot(oscillators, midi_packet.note);
 
       if (i >= 0) {
