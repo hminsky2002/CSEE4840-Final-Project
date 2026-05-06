@@ -82,7 +82,11 @@ void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern) {
   if (idx < 0 || idx >= 6) {
     return;
   }
-  lw_bus->regs[HEX_REG(idx)] = pattern & 0x7Fu;
+  uint8_t masked = pattern & 0x7Fu;
+  fprintf(stderr, "fpga_set_hex(idx=%d, pattern=0x%02X, masked=0x%02X) @ offset 0x%X\n", 
+          idx, pattern, masked, HEX_REG(idx));
+  fflush(stderr);
+  lw_bus->regs[HEX_REG(idx)] = masked;
 }
 
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
