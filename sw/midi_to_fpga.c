@@ -15,7 +15,7 @@
 // our global array to track our oscillator states!
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
-static uint16_t global_amp = AMP_UNITY;
+// static uint16_t global_amp = AMP_UNITY;
 
 // static int note_to_slot(uint8_t note) {
 //     if (note < 48) return 0;   /* C0–B2: 128 harmonics */
