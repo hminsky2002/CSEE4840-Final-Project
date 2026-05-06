@@ -17,12 +17,16 @@ static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
 static uint16_t global_amp = AMP_UNITY;
 
-static int note_to_slot(uint8_t note) {
-    if (note < 48) return 0;   /* C0–B2: 128 harmonics */
-    if (note < 72) return 1;   /* C3–B4:  32 harmonics */
-    if (note < 96) return 2;   /* C5–B6:   8 harmonics */
-    return 3;                  /* C7+:     4 harmonics */
-}
+// static int note_to_slot(uint8_t note) {
+//     if (note < 48) return 0;   /* C0–B2: 128 harmonics */
+//     if (note < 72) return 1;   /* C3–B4:  32 harmonics */
+//     if (note < 96) return 2;   /* C5–B6:   8 harmonics */
+//     return 3;                  /* C7+:     4 harmonics */
+// }
+static int note_to_slot(uint8_t note) {                                                                                      
+      (void)note;                                                                                                            
+      return 0;                                                                                                                
+}  
 
 #define MIDI_CC_VOLUME 7
 
