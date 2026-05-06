@@ -290,12 +290,12 @@ module soc_system_top(
 	  .wave_table_synth_0_wave_table_synth_ready_left   ( ready_left   ),
 	  .wave_table_synth_0_wave_table_synth_ready_right  ( ready_right  ),
 
-	  .wave_table_synth_0_hex_hex0 ( HEX0 ),
-	  .wave_table_synth_0_hex_hex1 ( HEX1 ),
-	  .wave_table_synth_0_hex_hex2 ( HEX2 ),
-	  .wave_table_synth_0_hex_hex3 ( HEX3 ),
-	  .wave_table_synth_0_hex_hex4 ( HEX4 ),
-	  .wave_table_synth_0_hex_hex5 ( HEX5 ),
+	  .hex_hex0 ( HEX0 ),
+	  .hex_hex1 ( HEX1 ),
+	  .hex_hex2 ( HEX2 ),
+	  .hex_hex3 ( HEX3 ),
+	  .hex_hex4 ( HEX4 ),
+	  .hex_hex5 ( HEX5 ),
   );
 
    // The following quiet the "no driver" warnings for output
