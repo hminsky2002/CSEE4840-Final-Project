@@ -17,12 +17,12 @@ static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
 static uint16_t global_amp = AMP_UNITY;
 
-static int note_to_slot(uint8_t note) {
-    if (note < 48) return 0;   /* C0–B2: 128 harmonics */
-    if (note < 72) return 1;   /* C3–B4:  32 harmonics */
-    if (note < 96) return 2;   /* C5–B6:   8 harmonics */
-    return 3;                  /* C7+:     4 harmonics */
-}
+// static int note_to_slot(uint8_t note) {
+//     if (note < 48) return 0;   /* C0–B2: 128 harmonics */
+//     if (note < 72) return 1;   /* C3–B4:  32 harmonics */
+//     if (note < 96) return 2;   /* C5–B6:   8 harmonics */
+//     return 3;                  /* C7+:     4 harmonics */
+// }
 
 #define MIDI_CC_VOLUME 7
 
@@ -68,20 +68,20 @@ static void update_display(peripheral *lw_bus) {
     fpga_set_hex(lw_bus, 0, SEG_DIGIT[n % 10]);
 }
 
-static void rebalance_voices(peripheral *lw_bus) {
-  int n = 0;
-  for (int v = 0; v < NUM_OSCILLATORS; v++) {
-    if (oscillators[v].in_use) n++;
-  }
-  if (n == 0) return;
-  uint16_t amp = global_amp / (uint16_t)n;
-  for (int v = 0; v < NUM_OSCILLATORS; v++) {
-    if (oscillators[v].in_use) {
-      oscillators[v].amplitude = amp;
-      fpga_set_amp(lw_bus, v, amp);
-    }
-  }
-}
+// static void rebalance_voices(peripheral *lw_bus) {
+//   int n = 0;
+//   for (int v = 0; v < NUM_OSCILLATORS; v++) {
+//     if (oscillators[v].in_use) n++;
+//   }
+//   if (n == 0) return;
+//   uint16_t amp = global_amp / (uint16_t)n;
+//   for (int v = 0; v < NUM_OSCILLATORS; v++) {
+//     if (oscillators[v].in_use) {
+//       oscillators[v].amplitude = amp;
+//       fpga_set_amp(lw_bus, v, amp);
+//     }
+//   }
+// }
 static int global_wavetable = 0;
 
 void *run_midi_reciever(void *arg) {
