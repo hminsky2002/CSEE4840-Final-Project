@@ -9,10 +9,10 @@ ifdef WAVETABLE_FILE
 endif
 
 # TARGET
-TARGET  = midi_to_fpga
+TARGET  = midi_to_fpga hex_test
 
 # SOURCES
-SRCS = midi_to_fpga.c wavetable.c midi.c fpga_bridge.c synth_functions.c
+SRCS = midi_to_fpga.c hex_test.c wavetable.c midi.c fpga_bridge.c synth_functions.c
 OBJS = $(SRCS:.c=.o)
 DEPS = wavetable.h midi.h fpga_bridge.h synth_functions.h
 
