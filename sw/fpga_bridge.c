@@ -78,6 +78,13 @@ void fpga_set_amp(peripheral *lw_bus, int voice, uint16_t amp) {
   lw_bus->regs[OSC_AMP(voice)] = amp;
 }
 
+void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern) {
+  if (idx < 0 || idx >= 6) {
+    return;
+  }
+  lw_bus->regs[HEX_REG(idx)] = pattern & 0x7Fu;
+}
+
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot, uint16_t amp) {
   if (voice < 0 || voice >= NUM_OSCILLATORS) {
