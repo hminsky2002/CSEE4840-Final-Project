@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <time.h>
 #include <unistd.h>
 
 // our global array to track our oscillator states!
@@ -19,6 +20,22 @@ static int global_wavetable = 0;
 
 static uint8_t last_note = 0;
 static bool    have_last_note = false;
+
+/* Master-amp ADSR envelope. Slider provides the ceiling, envelope shapes the
+ * per-note dynamics; actual_amp = (slider_amp * env_amp_q8) >> 8. */
+typedef enum { ENV_IDLE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } env_phase_t;
+
+#define ENV_TICK_NS          1000000L  /* 1 ms */
+#define ENV_PEAK             256       /* Q0.8 unity */
+#define ENV_SUSTAIN_LEVEL    192       /* 75% of peak */
+#define ENV_ATTACK_PER_TICK  32        /* 0   -> 256 in ~8 ms  */
+#define ENV_DECAY_PER_TICK   2         /* 256 -> 192 in ~32 ms */
+#define ENV_RELEASE_PER_TICK 1         /* 192 -> 0   in ~192 ms*/
+
+static volatile env_phase_t env_phase = ENV_IDLE;
+static volatile uint16_t    env_amp_q8 = 0;
+static volatile uint16_t    slider_amp = 127;
+static int                  active_voice_count = 0;
 
 /* note class 0..11 = C, C#, D, D#, E, F, F#, G, G#, A, A#, B */
 static const uint8_t NOTE_LETTER[12] = {
@@ -66,6 +83,56 @@ static void update_display(peripheral *lw_bus) {
     fpga_set_hex(lw_bus, 3, SEG_DIGIT[octave]);
 }
 
+void *run_envelope(void *arg) {
+  peripheral *lw_bus = (peripheral *)arg;
+  struct timespec tick = {0, ENV_TICK_NS};
+  uint16_t last_written = 0xFFFF;
+
+  while (1) {
+    nanosleep(&tick, NULL);
+
+    switch (env_phase) {
+      case ENV_IDLE:
+        env_amp_q8 = 0;
+        break;
+      case ENV_ATTACK:
+        if (env_amp_q8 + ENV_ATTACK_PER_TICK >= ENV_PEAK) {
+          env_amp_q8 = ENV_PEAK;
+          env_phase = ENV_DECAY;
+        } else {
+          env_amp_q8 += ENV_ATTACK_PER_TICK;
+        }
+        break;
+      case ENV_DECAY:
+        if (env_amp_q8 <= ENV_SUSTAIN_LEVEL + ENV_DECAY_PER_TICK) {
+          env_amp_q8 = ENV_SUSTAIN_LEVEL;
+          env_phase = ENV_SUSTAIN;
+        } else {
+          env_amp_q8 -= ENV_DECAY_PER_TICK;
+        }
+        break;
+      case ENV_SUSTAIN:
+        env_amp_q8 = ENV_SUSTAIN_LEVEL;
+        break;
+      case ENV_RELEASE:
+        if (env_amp_q8 <= ENV_RELEASE_PER_TICK) {
+          env_amp_q8 = 0;
+          env_phase = ENV_IDLE;
+        } else {
+          env_amp_q8 -= ENV_RELEASE_PER_TICK;
+        }
+        break;
+    }
+
+    uint16_t amp = ((uint32_t)slider_amp * env_amp_q8) >> 8;
+    if (amp != last_written) {
+      fpga_set_amp(lw_bus, amp);
+      last_written = amp;
+    }
+  }
+  return NULL;
+}
+
 void *run_midi_reciever(void *arg) {
   peripheral *lw_bus = (peripheral *)arg;
 
@@ -94,6 +161,11 @@ void *run_midi_reciever(void *arg) {
         fpga_voice_start(lw_bus, i, step, global_wavetable);
         last_note = midi_packet.note;
         have_last_note = true;
+
+        if (active_voice_count == 0) {
+          env_phase = ENV_ATTACK;
+        }
+        active_voice_count++;
         update_display(lw_bus);
       }
 
@@ -106,6 +178,11 @@ void *run_midi_reciever(void *arg) {
         oscillators[i].step_size = 0;
         oscillators[i].wavetable_slot = 0;
         fpga_kill_voice(lw_bus, i);
+
+        if (active_voice_count > 0) active_voice_count--;
+        if (active_voice_count == 0) {
+          env_phase = ENV_RELEASE;
+        }
         update_display(lw_bus);
       }
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PITCH_BEND) {
@@ -120,8 +197,7 @@ void *run_midi_reciever(void *arg) {
         update_display(lw_bus);
       }
     } else if (midi_packet.status == 0xB1 && midi_packet.note == 0x07) {
-      uint16_t amp = (uint16_t)(midi_packet.attack & 0x7F) << 1;
-      fpga_set_amp(lw_bus, amp);
+      slider_amp = (uint16_t)(midi_packet.attack & 0x7F) << 1;
     }
   }
   return NULL;
@@ -147,7 +223,9 @@ int main(int argc, char **argv) {
   update_display(&lw_bus);
 
   pthread_t midi_thread;
+  pthread_t env_thread;
 
+  pthread_create(&env_thread, NULL, run_envelope, &lw_bus);
   pthread_create(&midi_thread, NULL, run_midi_reciever, &lw_bus);
 
   pthread_join(midi_thread, NULL);
