@@ -119,6 +119,9 @@ void *run_midi_reciever(void *arg) {
         }
         update_display(lw_bus);
       }
+    } else if (midi_packet.status == 0xB1 && midi_packet.note == 0x07) {
+      uint16_t amp = (uint16_t)(midi_packet.attack & 0x7F) << 1;
+      fpga_set_amp(lw_bus, amp);
     }
   }
   return NULL;

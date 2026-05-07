@@ -65,6 +65,7 @@ void fpga_cleanup(peripheral *lw_bus);
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size);
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
+void fpga_set_amp(peripheral *lw_bus, uint16_t amp);
 void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot);

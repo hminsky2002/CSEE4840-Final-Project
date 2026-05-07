@@ -72,6 +72,10 @@ void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot) {
   lw_bus->regs[OSC_TABLE(voice)] = slot;
 }
 
+void fpga_set_amp(peripheral *lw_bus, uint16_t amp) {
+  lw_bus->regs[AMP_CTRL] = amp;
+}
+
 void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern) {
   if (idx < 0 || idx >= 6) {
     return;
