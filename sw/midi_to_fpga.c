@@ -4,13 +4,13 @@
 #include "wavetable.h"
 #include <fcntl.h>
 #include <math.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <pthread.h>
 
 // our global array to track our oscillator states!
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
@@ -139,9 +139,9 @@ void *run_midi_reciever(void *arg) {
           }
         }
       }
+    }
   }
   return NULL;
-}
 }
 
 int main(int argc, char **argv) {
@@ -167,6 +167,6 @@ int main(int argc, char **argv) {
 
   pthread_create(&midi_thread, NULL, run_midi_reciever, &lw_bus);
 
-  pthread_join(midi_thread,NULL);
+  pthread_join(midi_thread, NULL);
   return 0;
 }
