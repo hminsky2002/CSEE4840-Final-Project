@@ -136,6 +136,7 @@
    type="clock"
    dir="start" />
  <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
+ <interface name="hex" internal="wave_table_synth_0.hex" type="conduit" dir="end" />
  <interface name="hps" internal="hps_0.hps_io" type="conduit" dir="end" />
  <interface name="hps_ddr3" internal="hps_0.memory" type="conduit" dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
