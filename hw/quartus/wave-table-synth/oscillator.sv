@@ -5,12 +5,13 @@ module oscillator(
     input logic [15:0] step_size[0:31],
     input logic [1:0] table_sel[0:31],
     input logic [1:0] ctrl [0:31],
+    input logic [15:0] amp [0:31],
     input logic [15:0] bram_rdata,
     output logic [16:0] bram_raddr,
     output logic [15:0] osc_sample,
     output logic [4:0] osc_idx,
     output logic osc_valid,
-    output logic sweep_done 
+    output logic sweep_done
 );
     typedef enum logic { IDLE, RUNNING } state_t;
     state_t state;
@@ -20,6 +21,9 @@ module oscillator(
     logic [23:0] phase [0:31];
 
     wire [4:0] osc_to_read = step[4:0] - 5'd2;
+
+    wire signed [32:0] scaled_full   = $signed(bram_rdata) * $signed({1'b0, amp[osc_to_read]});
+    wire signed [15:0] scaled_sample = scaled_full[31:16];
 
     always_ff @(posedge clk) begin 
         if (rst) begin 
@@ -46,27 +50,27 @@ module oscillator(
                 end
 
                 RUNNING: begin
-                    if(step < 6'd32) begin
+                    if (step < 6'd32) begin
                         bram_raddr <= { table_sel[step[4:0]], phase[step[4:0]][23:9]};
                     end
 
-                    if (step > 6'd1) begin 
+                    if (step > 6'd1 && step < 6'd34) begin
                         osc_idx <= osc_to_read;
                         osc_valid <= 1'b1;
-                        if(ctrl[osc_to_read] == 2'b10) begin 
-                            osc_sample <= bram_rdata;
+                        if(ctrl[osc_to_read] == 2'b10) begin
+                            osc_sample <= scaled_sample;
                         end else begin
                             osc_sample <= 16'h0;
                         end
 
-                    if (ctrl[osc_to_read] == 2'b11) begin
+                        if (ctrl[osc_to_read] == 2'b11) begin
                             phase[osc_to_read] <= 24'h0;
                         end else if (ctrl[osc_to_read] == 2'b10) begin
                             phase[osc_to_read] <= phase[osc_to_read] + { step_size[osc_to_read], 8'h0 };
                         end
                     end
 
-                    if (step == 6'd33) begin
+                    if (step == 6'd34) begin
                         sweep_done <= 1'b1;
                         state      <= IDLE;
                     end else begin
