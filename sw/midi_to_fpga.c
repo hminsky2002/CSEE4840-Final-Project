@@ -25,7 +25,7 @@ static bool    have_last_note = false;
  * per-note dynamics; actual_amp = (slider_amp * env_amp_q8) >> 8. */
 typedef enum { ENV_IDLE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } env_phase_t;
 
-#define ENV_TICK_NS          1000000L  /* 1 ms */
+#define ENV_TICK_NS          10000000L  /* 1 ms */
 #define ENV_PEAK             256       /* Q0.8 unity */
 #define ENV_SUSTAIN_LEVEL    192       /* 75% of peak */
 #define ENV_ATTACK_PER_TICK  32        /* 0   -> 256 in ~8 ms  */
