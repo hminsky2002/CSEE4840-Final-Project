@@ -12,7 +12,7 @@ struct oscillator {
     uint16_t step_size;
     uint16_t control;
     uint16_t wavetable_slot;
-    uint16_t resolution; /* unused right now*/
+    uint16_t amplitude;
     uint8_t note;
     bool in_use;
 };
