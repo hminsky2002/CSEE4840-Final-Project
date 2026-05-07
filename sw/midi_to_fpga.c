@@ -129,9 +129,19 @@ void *run_midi_reciever(void *arg) {
         rebalance_voices(lw_bus);
         update_display(lw_bus);
       }
-    }
+    } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PITCH_BEND) {
+      if (midi_packet.note == 0x7F && midi_packet.attack == 0x7F) {
+        global_wavetable = (global_wavetable + 1) % NUM_TABLE_SLOTS;
+        for (int j = 0; j < NUM_OSCILLATORS; j++) {
+          if (oscillators[j].in_use) {
+            oscillators[j].wavetable_slot = global_wavetable;
+            fpga_set_table(lw_bus, j, global_wavetable);
+          }
+        }
+      }
   }
   return NULL;
+}
 }
 
 int main(int argc, char **argv) {
