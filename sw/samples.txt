@@ -1,1 +1,4 @@
-wavs/saw_8192.wav
+wavs/vocal_aaa.wav
+wavs/bell_din.wav
+wavs/pluck_str.wav
+wavs/weird_bad.wav

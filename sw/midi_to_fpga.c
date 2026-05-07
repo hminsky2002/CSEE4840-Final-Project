@@ -34,10 +34,10 @@ static const uint8_t SEG_DIGIT[10] = {
 
 /* HEX2, HEX1, HEX0 patterns per wavetable slot */
 static const uint8_t TABLE_NAME[NUM_TABLE_SLOTS][3] = {
-    { SEG_S, SEG_I, SEG_N },  /* slot 0: sin (sine) */
-    { SEG_S, SEG_A, SEG_U },  /* slot 1: sau (sawtooth) */
-    { SEG_S, SEG_Q, SEG_R },  /* slot 2: sqr (square) */
-    { SEG_T, SEG_R, SEG_I },  /* slot 3: tri (triangle) */
+    { SEG_A, SEG_A, SEG_A },  /* slot 0: AAA (vocal/formant)        */
+    { SEG_D, SEG_I, SEG_N },  /* slot 1: DIN (FM bell)              */
+    { SEG_S, SEG_T, SEG_R },  /* slot 2: STR (plucked string)       */
+    { SEG_B, SEG_A, SEG_D },  /* slot 3: BAD (hand-drawn / weird)   */
 };
 
 static void update_display(peripheral *lw_bus) {
