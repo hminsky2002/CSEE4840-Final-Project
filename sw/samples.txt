@@ -1,4 +1,4 @@
-wavs/vocal_aaa.wav
-wavs/bell_din.wav
-wavs/pluck_str.wav
-wavs/weird_bad.wav
+wavs/theremin_eer.wav
+wavs/fuzz_dis.wav
+wavs/arcade_arc.wav
+wavs/fiddle_fid.wav
