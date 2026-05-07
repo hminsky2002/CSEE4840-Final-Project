@@ -62,16 +62,27 @@ module wave_table_synth (
     logic sweep_active;
     logic sweep_done;
 
-    wire sample_tick = sink_ready && !sweep_active && !sample_valid;
+    // Require sink_ready to drop between samples. Otherwise the sink's
+    // post-consumption ready transition lags by a cycle, letting sample_tick
+    // fire a second time before the sink can accept the next sample.
+    logic sink_drained;
+
+    wire sample_tick = sink_ready && !sweep_active && !sample_valid && sink_drained;
+
+    always_ff @(posedge clk) begin
+        if (reset)            sink_drained <= 1'b1;
+        else if (!sink_ready) sink_drained <= 1'b1;
+        else if (sample_tick) sink_drained <= 1'b0;
+    end
 
     always_ff @(posedge clk) begin
         if(reset) begin
             sweep_active <= 1'b0;
-        end else if (sample_tick) begin 
+        end else if (sample_tick) begin
             sweep_active <= 1'b1;
-        end else if (sweep_done) begin 
+        end else if (sweep_done) begin
             sweep_active <= 1'b0;
-        end 
+        end
     end
 
     logic [15:0] osc_sample;
