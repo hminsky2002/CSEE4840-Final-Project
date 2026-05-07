@@ -33,13 +33,12 @@
 #define SEG_F 0x0Eu
 #define SEG_G 0x10u
 #define SEG_S 0x12u
-#define SEG_I 0x79u   /* same as '1' */
-#define SEG_N 0x2Bu   /* lowercase n */
-#define SEG_R 0x2Fu   /* lowercase r */
-#define SEG_T 0x07u   /* lowercase t */
-#define SEG_U 0x41u   /* uppercase U */
-#define SEG_Q 0x10u   /* same as '9', close enough to q */
-
+#define SEG_I 0x79u
+#define SEG_N 0x2Bu
+#define SEG_R 0x2Fu
+#define SEG_T 0x07u
+#define SEG_U 0x41u
+#define SEG_Q 0x18u
 
 #define TABLE_SIZE 8192
 #define NUM_TABLE_SLOTS 4
