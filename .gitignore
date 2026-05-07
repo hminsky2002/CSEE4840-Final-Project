@@ -8,4 +8,3 @@ sw/*.o
 *.bak
 *hpws_isw_handoff/
 __pycache__
-*.bin 
