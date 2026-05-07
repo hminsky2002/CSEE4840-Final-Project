@@ -11,6 +11,35 @@
 #define OSC_TABLE(v) (0x8000u + (v) * 4u + 2u)
 #define AMP_CTRL 0x8080u
 
+#define HEX_REG(i)   (0x8100u + (i))
+
+/* DE1-SoC HEX segments are active-low. bit order: gfedcba */
+#define SEG_BLANK 0x7Fu
+#define SEG_0 0x40u
+#define SEG_1 0x79u
+#define SEG_2 0x24u
+#define SEG_3 0x30u
+#define SEG_4 0x19u
+#define SEG_5 0x12u
+#define SEG_6 0x02u
+#define SEG_7 0x78u
+#define SEG_8 0x00u
+#define SEG_9 0x10u
+#define SEG_A 0x08u
+#define SEG_B 0x03u
+#define SEG_C 0x46u
+#define SEG_D 0x21u
+#define SEG_E 0x06u
+#define SEG_F 0x0Eu
+#define SEG_G 0x10u
+#define SEG_S 0x12u
+#define SEG_I 0x79u   /* same as '1' */
+#define SEG_N 0x2Bu   /* lowercase n */
+#define SEG_R 0x2Fu   /* lowercase r */
+#define SEG_T 0x07u   /* lowercase t */
+#define SEG_U 0x41u   /* uppercase U */
+#define SEG_Q 0x10u   /* same as '9', close enough to q */
+
 
 #define TABLE_SIZE 8192
 #define NUM_TABLE_SLOTS 4
@@ -37,6 +66,7 @@ void fpga_cleanup(peripheral *lw_bus);
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size);
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
+void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot);
 void fpga_kill_voice(peripheral *lw_bus, int voice);

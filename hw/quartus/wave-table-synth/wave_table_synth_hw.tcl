@@ -41,6 +41,7 @@ set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file wave_table_synth.sv SYSTEM_VERILOG PATH wave_table_synth.sv TOP_LEVEL_FILE
 add_fileset_file oscillator.sv SYSTEM_VERILOG PATH oscillator.sv
+add_fileset_file seven_segment_display.sv SYSTEM_VERILOG PATH seven_segment_display.sv
 
 # 
 # parameters
@@ -142,4 +143,24 @@ add_interface_port wave_table sample_valid synth_sample_valid Output 1
 add_interface_port wave_table ready_left synth_ready_left Input 1
 add_interface_port wave_table ready_right synth_ready_right Input 1
 add_interface_port wave_table sample synth_sample Output 16
+
+
+#
+# connection point hex
+#
+add_interface hex conduit end
+set_interface_property hex associatedClock clock
+set_interface_property hex associatedReset ""
+set_interface_property hex ENABLED true
+set_interface_property hex EXPORT_OF ""
+set_interface_property hex PORT_NAME_MAP ""
+set_interface_property hex CMSIS_SVD_VARIABLES ""
+set_interface_property hex SVD_ADDRESS_GROUP ""
+
+add_interface_port hex hex0 hex0 Output 7
+add_interface_port hex hex1 hex1 Output 7
+add_interface_port hex hex2 hex2 Output 7
+add_interface_port hex hex3 hex3 Output 7
+add_interface_port hex hex4 hex4 Output 7
+add_interface_port hex hex5 hex5 Output 7
 
