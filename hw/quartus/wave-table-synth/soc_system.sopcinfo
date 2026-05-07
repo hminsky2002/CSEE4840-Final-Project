@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="soc_system" version="1.0" fabric="QSYS">
  <!-- Format version 21.1 842 (Future versions may contain additional information.) -->
- <!-- 2026.05.06.22:48:58 -->
+ <!-- 2026.05.07.00:10:17 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1778122134</value>
+  <value>1778127013</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -75805,6 +75805,81 @@ parameters are a RESULT of the module parameters. -->
     <role>synth_sample</role>
    </port>
   </interface>
+  <interface name="hex" kind="conduit_end" version="21.1">
+   <!-- The connection points exposed by a module instance for the
+particular module parameters. Connection points and their
+parameters are a RESULT of the module parameters. -->
+   <parameter name="associatedClock">
+    <type>java.lang.String</type>
+    <value>clock</value>
+    <derived>false</derived>
+    <enabled>true</enabled>
+    <visible>true</visible>
+    <valid>true</valid>
+   </parameter>
+   <parameter name="associatedReset">
+    <type>java.lang.String</type>
+    <value></value>
+    <derived>false</derived>
+    <enabled>true</enabled>
+    <visible>true</visible>
+    <valid>true</valid>
+   </parameter>
+   <parameter name="deviceFamily">
+    <type>java.lang.String</type>
+    <value>UNKNOWN</value>
+    <derived>false</derived>
+    <enabled>true</enabled>
+    <visible>true</visible>
+    <valid>true</valid>
+   </parameter>
+   <parameter name="generateLegacySim">
+    <type>boolean</type>
+    <value>false</value>
+    <derived>false</derived>
+    <enabled>true</enabled>
+    <visible>true</visible>
+    <valid>true</valid>
+   </parameter>
+   <type>conduit</type>
+   <isStart>false</isStart>
+   <port>
+    <name>hex0</name>
+    <direction>Output</direction>
+    <width>7</width>
+    <role>hex0</role>
+   </port>
+   <port>
+    <name>hex1</name>
+    <direction>Output</direction>
+    <width>7</width>
+    <role>hex1</role>
+   </port>
+   <port>
+    <name>hex2</name>
+    <direction>Output</direction>
+    <width>7</width>
+    <role>hex2</role>
+   </port>
+   <port>
+    <name>hex3</name>
+    <direction>Output</direction>
+    <width>7</width>
+    <role>hex3</role>
+   </port>
+   <port>
+    <name>hex4</name>
+    <direction>Output</direction>
+    <width>7</width>
+    <role>hex4</role>
+   </port>
+   <port>
+    <name>hex5</name>
+    <direction>Output</direction>
+    <width>7</width>
+    <role>hex5</role>
+   </port>
+  </interface>
  </module>
  <connection
    name="hps_0_clk_0.clk_reset/hps_0_bridges.reset_sink"
@@ -86399,7 +86474,7 @@ parameters are a RESULT of the module parameters. -->
   <version>21.1</version>
  </plugin>
  <plugin>
-  <instanceCount>7</instanceCount>
+  <instanceCount>8</instanceCount>
   <name>conduit_end</name>
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IMutableConnectionPoint</subtype>
