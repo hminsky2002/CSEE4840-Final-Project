@@ -62,20 +62,7 @@ module wave_table_synth (
     logic sweep_active;
     logic sweep_done;
 
-    // Require sink_ready to drop between samples. Otherwise the sink's
-    // post-consumption ready transition lags by a cycle, letting sample_tick
-    // fire a second time before the sink can accept the next sample.
-    // Polarity chosen so the FPGA-fabric default of 0 means "free to fire" —
-    // we don't depend on the reset branch executing on JTAG reprogram.
-    logic sink_held;
-
-    wire sample_tick = sink_ready && !sweep_active && !sample_valid && !sink_held;
-
-    always_ff @(posedge clk) begin
-        if (reset)            sink_held <= 1'b0;
-        else if (!sink_ready) sink_held <= 1'b0;
-        else if (sample_tick) sink_held <= 1'b1;
-    end
+    wire sample_tick = sink_ready && !sweep_active && !sample_valid;
 
     always_ff @(posedge clk) begin
         if(reset) begin
