@@ -167,7 +167,7 @@ void *run_adsr_envelope(void *arg) {
       case (ENV_ATTACK):
         if (curr->env_amp_q8 + curr->attack_step >= curr->peak) {
           curr->phase = ENV_DECAY;
-          curr->env_amp_q8 = ENV_PEAK;
+          curr->env_amp_q8 = curr->peak;
         } else {
           curr->env_amp_q8 += curr->attack_step;
           /* no phase change */
