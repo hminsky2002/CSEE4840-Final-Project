@@ -11,11 +11,14 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <time.h>
 
 // our global array to track our oscillator states!
 static struct oscillator oscillators[NUM_OSCILLATORS] = {0};
 
 static int global_wavetable = 0;
+
+pthread_mutex_t osc_lock;
 
 static uint8_t last_note = 0;
 static bool    have_last_note = false;
@@ -82,15 +85,20 @@ void *run_midi_reciever(void *arg) {
     }
 
     if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_ON) {
+      uint16_t step = 0;
+      pthread_mutex_lock(&osc_lock);
       int i = osc_find_free_slot(oscillators);
-
       if (i >= 0) {
-        uint16_t step = note_to_step_size(midi_packet.note);
+        step = note_to_step_size(midi_packet.note);
         oscillators[i].note = midi_packet.note;
         oscillators[i].step_size = step;
         oscillators[i].wavetable_slot = global_wavetable;
         oscillators[i].in_use = true;
+        oscillators[i].phase = ENV_ATTACK;
+      }
+      pthread_mutex_unlock(&osc_lock);
 
+      if (i >= 0) {
         fpga_voice_start(lw_bus, i, step, global_wavetable);
         last_note = midi_packet.note;
         have_last_note = true;
@@ -98,14 +106,14 @@ void *run_midi_reciever(void *arg) {
       }
 
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
+      pthread_mutex_lock(&osc_lock);
       int i = osc_find_note_slot(oscillators, midi_packet.note);
+      if (i >= 0) {
+        oscillators[i].phase = ENV_RELEASE;
+      }
+      pthread_mutex_unlock(&osc_lock);
 
       if (i >= 0) {
-        oscillators[i].in_use = false;
-        oscillators[i].note = 0;
-        oscillators[i].step_size = 0;
-        oscillators[i].wavetable_slot = 0;
-        // fpga_kill_voice(lw_bus, i);
         update_display(lw_bus);
       }
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PITCH_BEND) {
@@ -113,7 +121,9 @@ void *run_midi_reciever(void *arg) {
         global_wavetable = (global_wavetable + 1) % NUM_TABLE_SLOTS;
         for (int j = 0; j < NUM_OSCILLATORS; j++) {
           if (oscillators[j].in_use) {
+            pthread_mutex_lock(&osc_lock);
             oscillators[j].wavetable_slot = global_wavetable;
+            pthread_mutex_unlock(&osc_lock);
             fpga_set_table(lw_bus, j, global_wavetable);
           }
         }
@@ -130,51 +140,65 @@ void *run_midi_reciever(void *arg) {
 void *run_adsr_envelope(void *arg) {
     peripheral *lw_bus = (peripheral *)arg;
     struct timespec tick = {0, ENV_TICK_NS};
-    uint16_t last_written = 0xFFFF;
+    static uint16_t last_written[NUM_OSCILLATORS] = {0};
 
     while (1) {
-        nanosleep(&tick, NULL);
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &tick, NULL);
         /* iterate over each oscillator */
         for (int i = 0; i < NUM_OSCILLATORS; i++) {
-            struct oscillator curr = oscillators[i];
-            switch (curr.phase) {
+            struct oscillator *curr = &oscillators[i];
+            uint16_t curr_amp;
+            bool kill_voice = false;
+            pthread_mutex_lock(&osc_lock);
+            switch (curr->phase) {
                 case (ENV_IDLE):
-                    curr.env_amp_q8 = 0;
+                    curr->env_amp_q8 = 0;
                     break;
                 case (ENV_ATTACK):
-                    if (curr.env_amp_q8 + ENV_ATTACK_PER_TICK >= ENV_PEAK) {
-                        curr.phase = ENV_DECAY;
-                        curr.env_amp_q8 = ENV_PEAK;
+                    if (curr->env_amp_q8 + ENV_ATTACK_PER_TICK >= ENV_PEAK) {
+                        curr->phase = ENV_DECAY;
+                        curr->env_amp_q8 = ENV_PEAK;
                     } else {
-                        curr.env_amp_q8 += ENV_ATTACK_PER_TICK;
-                        fpga_set_amp(lw_bus, i, curr.env_amp_q8);
+                        curr->env_amp_q8 += ENV_ATTACK_PER_TICK;
                         /* no phase change */
                     }
+                    break;
                 case (ENV_DECAY):
-                    if (curr.env_amp_q8 - ENV_DECAY_PER_TICK <= ENV_SUSTAIN_LEVEL) {
-                        curr.phase = ENV_SUSTAIN;
-                        curr.env_amp_q8 = ENV_SUSTAIN_LEVEL;
+                    if (curr->env_amp_q8 - ENV_DECAY_PER_TICK <= ENV_SUSTAIN_LEVEL) {
+                        curr->phase = ENV_SUSTAIN;
+                        curr->env_amp_q8 = ENV_SUSTAIN_LEVEL;
                     } else {
                         /* no phase change */
-                        curr.env_amp_q8 -= ENV_DECAY_PER_TICK;
-                        fpga_set_amp(lw_bus, i, curr.env_amp_q8);
+                        curr->env_amp_q8 -= ENV_DECAY_PER_TICK;
                     }
+                    break;
                 case (ENV_SUSTAIN):
-                    curr.env_amp_q8 = ENV_SUSTAIN_LEVEL;
+                    curr->env_amp_q8 = ENV_SUSTAIN_LEVEL;
                     break;
                 case (ENV_RELEASE):
-                    if (curr.env_amp_q8 <= ENV_RELEASE_PER_TICK) {
-                        curr.phase = ENV_IDLE;
-                        curr.env_amp_q8 = 0;
-                        fpga_set_amp(lw_bus, i, curr.env_amp_q8);
-                        fpga_kill_voice(lw_bus, i);
+                    if (curr->env_amp_q8 <= ENV_RELEASE_PER_TICK) {
+                        curr->phase = ENV_IDLE;
+                        curr->env_amp_q8 = 0;
+                        curr->in_use = false;
+                        curr->note = 0;
+                        curr->step_size = 0;
+                        curr->wavetable_slot = 0;
+                        kill_voice = true;
                     } else {
                         /* no phase change */
-                        curr.env_amp_q8 -= ENV_RELEASE_PER_TICK;
+                        curr->env_amp_q8 -= ENV_RELEASE_PER_TICK;
                     }
+            }
+            curr_amp = curr->env_amp_q8;
+            pthread_mutex_unlock(&osc_lock);
+            if (kill_voice) fpga_kill_voice(lw_bus, i);
+            if (curr_amp != last_written[i]) {
+                fpga_set_amp(lw_bus, i, curr_amp);
+                last_written[i] = curr_amp;
             }
         }
     }
+    return NULL;
 }
 
 int main(int argc, char **argv) {
@@ -198,6 +222,7 @@ int main(int argc, char **argv) {
 
   pthread_t midi_thread;
   pthread_t adsr_thread;
+  pthread_mutex_init(&osc_lock, NULL);
 
   pthread_create(&midi_thread, NULL, run_midi_reciever, &lw_bus);
   pthread_create(&adsr_thread, NULL, run_adsr_envelope, &lw_bus);

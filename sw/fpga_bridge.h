@@ -56,9 +56,9 @@
 
 /* adsr macros */
 #define ENV_TICK_NS             1000000L
-#define ENV_PEAK                256
+#define ENV_PEAK                255
 #define ENV_SUSTAIN_LEVEL       192
-#define ENV_ATTACK_PER_TICK  32
+#define ENV_ATTACK_PER_TICK     32
 #define ENV_DECAY_PER_TICK      2 
 #define ENV_RELEASE_PER_TICK    1
 

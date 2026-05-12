@@ -1,11 +1,11 @@
 # COMPILER SETTINGS
 CC      = gcc
-CFLAGS  = -Wall -Wextra -Werror -g
+CFLAGS  = -Wall -Wextra -Werror -g -D_POSIX_C_SOURCE=200112L
 LDFLAGS = -lm -pthread
 
 ifdef WAVETABLE_FILE
-# usage: make WAVETABLE_FILE=/path/to/wavetable.bin 
-	CFLAGS += -DWAVETABLE_FILE='"$(WAVETABLE_FILE)"'      
+# usage: make WAVETABLE_FILE=/path/to/wavetable.bin
+	CFLAGS += -DWAVETABLE_FILE='"$(WAVETABLE_FILE)"'
 endif
 
 # TARGET
