@@ -11,7 +11,7 @@ int load_wavetable_bin(const char *path, peripheral *lw_bus){
         return -1;
     }
 
-    int16_t slot_buf[TABLE_SIZE];
+    static int16_t slot_buf[TABLE_SIZE];
     int slot = 0;
 
     while(slot < NUM_TABLE_SLOTS){

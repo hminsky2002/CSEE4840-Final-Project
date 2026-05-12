@@ -5,7 +5,7 @@ module wave_table_synth (
 	output logic [15:0]  readdata,
     input logic        write,
     input logic        chipselect,
-    input logic [16:0]  address,
+    input logic [17:0]  address,
     input  logic        ready_left,
     input  logic        ready_right,
     output logic [15:0] sample,
@@ -19,11 +19,11 @@ module wave_table_synth (
 );
 
 
-    wire in_wavetable = (address[16:15] == 2'b00);
-    wire in_osc_region = (address[16:15] == 2'b01);
-    wire in_osc_registers = in_osc_region && (address[14:7] == 8'h00);
-    wire in_hex_registers = in_osc_region && (address[14:7] == 8'h02);
-    wire is_amp_ctrl = in_osc_region && (address[14:0] == 15'h0080);
+    wire in_wavetable = (address[17] == 1'b0);
+    wire in_osc_region = (address[17] == 1'b1);
+    wire in_osc_registers = in_osc_region && (address[16:7] == 10'h000);
+    wire in_hex_registers = in_osc_region && (address[16:7] == 10'h002);
+    wire is_amp_ctrl = in_osc_region && (address[16:0] == 17'h00080);
 
     wire [4:0] osc_addr = address[6:2];
     wire [1:0] reg_addr = address[1:0];
@@ -44,15 +44,15 @@ module wave_table_synth (
     );
 
 
-    (* ramstyle = "M10K" *) logic [15:0] wavetable_bram [0:32767];
+    (* ramstyle = "M10K" *) logic [15:0] wavetable_bram [0:131071];
 
 
-    logic [14:0] bram_raddr;
+    logic [16:0] bram_raddr;
     logic [15:0] bram_rdata;
 
     always_ff @(posedge clk) begin
         if (chipselect && write && in_wavetable) begin
-            wavetable_bram[address[14:0]] <= writedata;
+            wavetable_bram[address[16:0]] <= writedata;
         end
         bram_rdata <= wavetable_bram[bram_raddr];
     end

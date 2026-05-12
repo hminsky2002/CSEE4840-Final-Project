@@ -4,15 +4,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define WAVE_SYNTH_PERIPHERAL_BYTES 0x40000
+#define WAVE_SYNTH_PERIPHERAL_BYTES 0x80000
 
-#define OSC_STEP(v) (0x8000u + (v) * 4u + 0u)
-#define OSC_CTRL(v) (0x8000u + (v) * 4u + 1u)
-#define OSC_TABLE(v) (0x8000u + (v) * 4u + 2u)
-#define OSC_AMP(v) (0x8000u + (v) * 4u + 3u)
-#define AMP_CTRL 0x8080u
+#define OSC_STEP(v) (0x20000u + (v) * 4u + 0u)
+#define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
+#define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
+#define OSC_AMP(v) (0x20000u + (v) * 4u + 3u)
+#define AMP_CTRL 0x20080u
 
-#define HEX_REG(i)   (0x8100u + (i))
+#define HEX_REG(i)   (0x20100u + (i))
 
 /* DE1-SoC HEX segments are active-low. bit order: gfedcba */
 #define SEG_BLANK 0x7Fu
@@ -41,7 +41,7 @@
 #define SEG_U 0x41u
 #define SEG_Q 0x18u
 
-#define TABLE_SIZE 8192
+#define TABLE_SIZE 32768
 #define NUM_TABLE_SLOTS 4
 
 #define WAVETABLE_WORD(slot,sample) (((slot)* TABLE_SIZE) + (sample))
