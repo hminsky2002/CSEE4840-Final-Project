@@ -731,7 +731,7 @@
    start="hps_0.h2f_lw_axi_master"
    end="wave_table_synth_0.avalon_slave_0">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x00040000" />
+  <parameter name="baseAddress" value="0x00080000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection

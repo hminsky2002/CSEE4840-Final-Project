@@ -121,7 +121,7 @@ add_interface_port avalon_slave_0 writedata writedata Input 16
 add_interface_port avalon_slave_0 readdata readdata Output 16
 add_interface_port avalon_slave_0 write write Input 1
 add_interface_port avalon_slave_0 chipselect chipselect Input 1
-add_interface_port avalon_slave_0 address address Input 17
+add_interface_port avalon_slave_0 address address Input 18
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isFlash 0
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isMemoryDevice 0
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isNonVolatileStorage 0
