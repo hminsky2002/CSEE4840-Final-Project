@@ -19,7 +19,7 @@ struct oscillator {
 
     env_phase_t phase;
     uint16_t    env_amp_q8;
-    uint8_t     env_peak; 
+    uint16_t    sustain; 
 };
 
 uint16_t note_to_step_size(uint8_t note);
