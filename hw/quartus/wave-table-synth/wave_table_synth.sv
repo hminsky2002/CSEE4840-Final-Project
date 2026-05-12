@@ -60,6 +60,7 @@ module wave_table_synth (
     logic [15:0] step_size_reg [0:31];
     logic [1:0] ctrl_reg [0:31];
     logic [1:0] table_sel_reg [0:31];
+    logic [7:0] osc_amp_reg [0:31]; /* per oscillator amp control */
     logic [7:0] amp_ctrl_reg;
 
     always_ff @(posedge clk) begin
@@ -68,6 +69,7 @@ module wave_table_synth (
                 step_size_reg[i] <= 16'h0;
                 ctrl_reg[i] <= 2'b00;
                 table_sel_reg[i] <= 2'h0;
+                osc_amp_reg[i] <= 8'h0;
             end
             amp_ctrl_reg <= 8'hFF;
         end else if (chipselect && write && in_osc_registers) begin
@@ -75,7 +77,7 @@ module wave_table_synth (
                 2'd0: step_size_reg[osc_addr] <= writedata;
                 2'd1: ctrl_reg[osc_addr] <= writedata[1:0];
                 2'd2: table_sel_reg[osc_addr] <= writedata[1:0];
-                2'd3: ; /* nada */
+                2'd3: osc_amp_reg[osc_addr] <= writedata[7:0]; /* nada */
             endcase
         end else if (chipselect && write && is_amp_ctrl) begin
             amp_ctrl_reg <= writedata[7:0];
@@ -123,8 +125,13 @@ module wave_table_synth (
     logic signed [31:0] mix_acc;
     logic signed [40:0] mix_scaled;
     logic signed [32:0] mix_shifted;
-    assign mix_scaled  = mix_acc * $signed({1'b0, amp_ctrl_reg});
+    assign mix_scaled  = mix_acc * $signed({1'b0, amp_ctrl_reg}); /* applied after oscillator sum */
     assign mix_shifted = mix_scaled >>> 8;
+
+    wire signed [24:0] osc_sample_scaled;
+    wire signed [24:0] osc_sample_shifted;
+    assign osc_sample_scaled = $signed({1'b0, osc_amp_reg[osc_idx]}) * $signed(osc_sample);
+    assign osc_sample_shifted = osc_sample_scaled >>> 8;
 
     always_ff @(posedge clk) begin
         if(reset) begin
@@ -135,7 +142,7 @@ module wave_table_synth (
                 mix_acc <= '0;
             end else if (osc_valid) begin
                 //sign extension nonsense that i don't understand
-                mix_acc <= mix_acc + $signed({{16{osc_sample[15]}}, osc_sample});
+                mix_acc <= mix_acc + osc_sample_shifted;
             end
 
             if (sweep_done) begin
