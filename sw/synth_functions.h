@@ -11,6 +11,7 @@ typedef enum { ENV_IDLE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } env_p
 struct oscillator {
     uint16_t step_size;
     uint16_t control;
+    uint16_t velocity;
     uint16_t wavetable_slot;
     uint16_t resolution; /* unused right now*/
     uint8_t note;

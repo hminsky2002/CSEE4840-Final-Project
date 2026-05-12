@@ -91,6 +91,8 @@ void *run_midi_reciever(void *arg) {
       if (i >= 0) {
         step = note_to_step_size(midi_packet.note);
         oscillators[i].note = midi_packet.note;
+        oscillators[i].velocity = midi_packet.attack;
+        oscillators[i].env_amp_q8 = midi_packet.attack;
         oscillators[i].step_size = step;
         oscillators[i].wavetable_slot = global_wavetable;
         oscillators[i].in_use = true;
@@ -108,6 +110,7 @@ void *run_midi_reciever(void *arg) {
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
       pthread_mutex_lock(&osc_lock);
       int i = osc_find_note_slot(oscillators, midi_packet.note);
+
       pthread_mutex_unlock(&osc_lock);
 
       if (i >= 0) {
@@ -149,7 +152,7 @@ void *run_adsr_envelope(void *arg) {
             pthread_mutex_lock(&osc_lock);
             switch (curr->phase) {
                 case (ENV_IDLE):
-                    curr->env_amp_q8 = 0;
+                    curr->env_amp_q8 = curr->velocity;
                     break;
                 case (ENV_ATTACK):
                     if (curr->env_amp_q8 + ENV_ATTACK_PER_TICK >= ENV_PEAK) {
