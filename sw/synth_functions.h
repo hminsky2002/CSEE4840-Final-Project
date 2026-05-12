@@ -21,8 +21,6 @@ struct oscillator {
     uint8_t     env_peak; 
 };
 
-static int  active_voice_count = 0;
-
 uint16_t note_to_step_size(uint8_t note);
 
 int osc_find_free_slot( struct oscillator *oscillators);
