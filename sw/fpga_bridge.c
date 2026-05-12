@@ -72,7 +72,14 @@ void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot) {
   lw_bus->regs[OSC_TABLE(voice)] = slot;
 }
 
-void fpga_set_amp(peripheral *lw_bus, uint16_t amp) {
+void fpga_set_amp(peripheral *lw_bus, int voice, uint16_t amp) {
+  if (amp < 0 || amp >= ENV_PEAK) {
+    return;
+  }
+  lw_bus->regs[OSC_AMP(voice)] = amp;
+}
+
+void fpga_set_master_amp(peripheral *lw_bus, uint16_t amp) {
   lw_bus->regs[AMP_CTRL] = amp;
 }
 

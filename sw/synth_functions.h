@@ -7,7 +7,7 @@
 /*
 * core struct, respresents a single oscillator and its corresponding registers in the fpga
 */
-
+typedef enum { ENV_IDLE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE } env_phase_t;
 struct oscillator {
     uint16_t step_size;
     uint16_t control;
@@ -15,7 +15,13 @@ struct oscillator {
     uint16_t resolution; /* unused right now*/
     uint8_t note;
     bool in_use;
+
+    env_phase_t phase;
+    uint16_t    env_amp_q8;
+    uint8_t     env_peak; 
 };
+
+static int  active_voice_count = 0;
 
 uint16_t note_to_step_size(uint8_t note);
 

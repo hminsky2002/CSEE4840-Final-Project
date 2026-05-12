@@ -105,7 +105,7 @@ void *run_midi_reciever(void *arg) {
         oscillators[i].note = 0;
         oscillators[i].step_size = 0;
         oscillators[i].wavetable_slot = 0;
-        fpga_kill_voice(lw_bus, i);
+        // fpga_kill_voice(lw_bus, i);
         update_display(lw_bus);
       }
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PITCH_BEND) {
@@ -121,10 +121,60 @@ void *run_midi_reciever(void *arg) {
       }
     } else if (midi_packet.status == 0xB1 && midi_packet.note == 0x07) {
       uint16_t amp = (uint16_t)(midi_packet.attack & 0x7F) << 1;
-      fpga_set_amp(lw_bus, amp);
+      fpga_set_master_amp(lw_bus, amp);
     }
   }
   return NULL;
+}
+
+void *run_adsr_envelope(void *arg) {
+    peripheral *lw_bus = (peripheral *)arg;
+    struct timespec tick = {0, ENV_TICK_NS};
+    uint16_t last_written = 0xFFFF;
+
+    while (1) {
+        nanosleep(&tick, NULL);
+        /* iterate over each oscillator */
+        for (int i = 0; i < NUM_OSCILLATORS; i++) {
+            struct oscillator curr = oscillators[i];
+            switch (curr.phase) {
+                case (ENV_IDLE):
+                    curr.env_amp_q8 = 0;
+                    break;
+                case (ENV_ATTACK):
+                    if (curr.env_amp_q8 + ENV_ATTACK_PER_TICK >= ENV_PEAK) {
+                        curr.phase = ENV_DECAY;
+                        curr.env_amp_q8 = ENV_PEAK;
+                    } else {
+                        curr.env_amp_q8 += ENV_ATTACK_PER_TICK;
+                        fpga_set_amp(lw_bus, i, curr.env_amp_q8);
+                        /* no phase change */
+                    }
+                case (ENV_DECAY):
+                    if (curr.env_amp_q8 - ENV_DECAY_PER_TICK <= ENV_SUSTAIN_LEVEL) {
+                        curr.phase = ENV_SUSTAIN;
+                        curr.env_amp_q8 = ENV_SUSTAIN_LEVEL;
+                    } else {
+                        /* no phase change */
+                        curr.env_amp_q8 -= ENV_DECAY_PER_TICK;
+                        fpga_set_amp(lw_bus, i, curr.env_amp_q8);
+                    }
+                case (ENV_SUSTAIN):
+                    curr.env_amp_q8 = ENV_SUSTAIN_LEVEL;
+                    break;
+                case (ENV_RELEASE):
+                    if (curr.env_amp_q8 <= ENV_RELEASE_PER_TICK) {
+                        curr.phase = ENV_IDLE;
+                        curr.env_amp_q8 = 0;
+                        fpga_set_amp(lw_bus, i, curr.env_amp_q8);
+                        fpga_kill_voice(lw_bus, i);
+                    } else {
+                        /* no phase change */
+                        curr.env_amp_q8 -= ENV_RELEASE_PER_TICK;
+                    }
+            }
+        }
+    }
 }
 
 int main(int argc, char **argv) {
@@ -147,8 +197,10 @@ int main(int argc, char **argv) {
   update_display(&lw_bus);
 
   pthread_t midi_thread;
+  pthread_t adsr_thread;
 
   pthread_create(&midi_thread, NULL, run_midi_reciever, &lw_bus);
+  pthread_create(&adsr_thread, NULL, run_adsr_envelope, &lw_bus);
 
   pthread_join(midi_thread, NULL);
   return 0;
