@@ -1,0 +1,8 @@
+	component foo is
+		port (
+			result  : out std_logic_vector(39 downto 0);                    -- result
+			dataa_0 : in  std_logic_vector(7 downto 0)  := (others => 'X'); -- dataa_0
+			datab_0 : in  std_logic_vector(31 downto 0) := (others => 'X')  -- datab_0
+		);
+	end component foo;
+

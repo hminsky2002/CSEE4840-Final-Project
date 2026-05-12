@@ -9,6 +9,7 @@
 #define OSC_STEP(v) (0x8000u + (v) * 4u + 0u)
 #define OSC_CTRL(v) (0x8000u + (v) * 4u + 1u)
 #define OSC_TABLE(v) (0x8000u + (v) * 4u + 2u)
+#define OSC_AMP(v) (0x8000u + (v) * 4u + 3u)
 #define AMP_CTRL 0x8080u
 
 #define HEX_REG(i)   (0x8100u + (i))
@@ -50,9 +51,16 @@
 #define CTRL_START  0x0002u
 #define CTRL_RESET  0x0003u
 
-
 #define SAMPLE_RATE 48000
 #define NUM_OSCILLATORS 32
+
+/* adsr macros */
+#define ENV_TICK_NS             1000000L
+#define ENV_PEAK                255
+#define ENV_SUSTAIN_LEVEL       192
+#define ENV_ATTACK_PER_TICK     64
+#define ENV_DECAY_PER_TICK      4
+#define ENV_RELEASE_PER_TICK    2
 
 typedef struct {
     volatile uint16_t *regs;
@@ -62,15 +70,20 @@ typedef struct {
 int fpga_init(peripheral *lw_bus);
 void fpga_kill_voices(peripheral *lw_bus);
 void fpga_cleanup(peripheral *lw_bus);
+
+/* per voice setters */
 void fpga_set_step(peripheral *lw_bus, int voice, uint16_t step_size);
 void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
-void fpga_set_amp(peripheral *lw_bus, uint16_t amp);
+void fpga_set_amp(peripheral *lw_bus, int voice, uint16_t amp);
 void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot);
 void fpga_kill_voice(peripheral *lw_bus, int voice);
 int fpga_load_slot(peripheral *lw_bus, int slot, const int16_t *samples,
                    int n);
+
+/* master amp*/
+void fpga_set_master_amp(peripheral *lw_bus, uint16_t amp);
 
 #endif
