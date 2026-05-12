@@ -108,9 +108,6 @@ void *run_midi_reciever(void *arg) {
     } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_NOTE_OFF) {
       pthread_mutex_lock(&osc_lock);
       int i = osc_find_note_slot(oscillators, midi_packet.note);
-      if (i >= 0) {
-        oscillators[i].phase = ENV_RELEASE;
-      }
       pthread_mutex_unlock(&osc_lock);
 
       if (i >= 0) {

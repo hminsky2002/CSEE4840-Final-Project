@@ -6,12 +6,19 @@
 
 
 int osc_find_note_slot( struct oscillator *oscillators, uint8_t note){
+    int found = 0;
     for(int i = 0; i < NUM_OSCILLATORS; i++){
         if(oscillators[i].in_use && oscillators[i].note == note){
-            return i;
+           oscillators[i].phase = ENV_RELEASE;
+           found++;
         }
     }
-    return -1;
+    if(found >= 0){
+        return found;
+    }
+    else {
+        return -1;
+    }
 }
 
 
