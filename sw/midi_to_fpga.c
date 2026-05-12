@@ -102,6 +102,7 @@ void *run_midi_reciever(void *arg) {
         oscillators[i].attack_step  = (uint16_t)(vel_factor * ENV_ATTACK_PER_TICK);
         oscillators[i].decay_step   = (uint16_t)(vel_factor * ENV_DECAY_PER_TICK);
         oscillators[i].release_step = (uint16_t)(vel_factor * ENV_RELEASE_PER_TICK);
+        oscillators[i].peak = (uint16_t)(vel_factor * ENV_PEAK);
         if (oscillators[i].attack_step  == 0) oscillators[i].attack_step  = 1;
         if (oscillators[i].decay_step   == 0) oscillators[i].decay_step   = 1;
         if (oscillators[i].release_step == 0) oscillators[i].release_step = 1;
@@ -164,7 +165,7 @@ void *run_adsr_envelope(void *arg) {
         curr->env_amp_q8 = 0;
         break;
       case (ENV_ATTACK):
-        if (curr->env_amp_q8 + curr->attack_step >= ENV_PEAK) {
+        if (curr->env_amp_q8 + curr->attack_step >= curr->peak) {
           curr->phase = ENV_DECAY;
           curr->env_amp_q8 = ENV_PEAK;
         } else {
