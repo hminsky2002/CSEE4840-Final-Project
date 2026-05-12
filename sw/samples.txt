@@ -1,1 +1,4 @@
-wavs/saw_8192.wav
+wavs/05.wav,247,0
+wavs/16.wav,911,0
+wavs/17.wav,440,0
+wavs/04_alt.wav,400,0

@@ -91,7 +91,8 @@ void *run_midi_reciever(void *arg) {
       pthread_mutex_lock(&osc_lock);
       int i = osc_find_free_slot(oscillators);
       if (i >= 0) {
-        step = note_to_step_size(midi_packet.note);
+        step = voice_step(midi_packet.note, (uint8_t)global_wavetable);
+        fpga_set_osc_resolution(lw_bus, i, wavetable_slot_resolution[global_wavetable]);
         oscillators[i].note = midi_packet.note;
         oscillators[i].step_size = step;
         oscillators[i].wavetable_slot = global_wavetable;

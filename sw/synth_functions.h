@@ -26,7 +26,7 @@ struct oscillator {
     uint16_t    peak;
 };
 
-uint16_t note_to_step_size(uint8_t note);
+uint16_t voice_step(uint8_t note, uint8_t slot);
 
 int osc_find_free_slot( struct oscillator *oscillators);
 int osc_find_note_slot( struct oscillator *oscillators, uint8_t note);
