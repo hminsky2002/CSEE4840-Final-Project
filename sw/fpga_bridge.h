@@ -58,9 +58,9 @@
 #define ENV_TICK_NS             1000000L
 #define ENV_PEAK                255
 #define ENV_SUSTAIN_LEVEL       192
-#define ENV_ATTACK_PER_TICK     32
-#define ENV_DECAY_PER_TICK      2 
-#define ENV_RELEASE_PER_TICK    1
+#define ENV_ATTACK_PER_TICK     64
+#define ENV_DECAY_PER_TICK      4
+#define ENV_RELEASE_PER_TICK    2
 
 typedef struct {
     volatile uint16_t *regs;

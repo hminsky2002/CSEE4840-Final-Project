@@ -97,7 +97,14 @@ void *run_midi_reciever(void *arg) {
         oscillators[i].wavetable_slot = global_wavetable;
         oscillators[i].in_use = true;
         oscillators[i].phase = ENV_ATTACK;
-        oscillators[i].sustain = ((double) AMP_STEP * midi_packet.attack )* ENV_SUSTAIN_LEVEL;
+        double vel_factor = AMP_STEP * midi_packet.attack;
+        oscillators[i].sustain      = (uint16_t)(vel_factor * ENV_SUSTAIN_LEVEL);
+        oscillators[i].attack_step  = (uint16_t)(vel_factor * ENV_ATTACK_PER_TICK);
+        oscillators[i].decay_step   = (uint16_t)(vel_factor * ENV_DECAY_PER_TICK);
+        oscillators[i].release_step = (uint16_t)(vel_factor * ENV_RELEASE_PER_TICK);
+        if (oscillators[i].attack_step  == 0) oscillators[i].attack_step  = 1;
+        if (oscillators[i].decay_step   == 0) oscillators[i].decay_step   = 1;
+        if (oscillators[i].release_step == 0) oscillators[i].release_step = 1;
       }
       pthread_mutex_unlock(&osc_lock);
 
@@ -157,28 +164,28 @@ void *run_adsr_envelope(void *arg) {
         curr->env_amp_q8 = 0;
         break;
       case (ENV_ATTACK):
-        if (curr->env_amp_q8 + ENV_ATTACK_PER_TICK >= ENV_PEAK) {
+        if (curr->env_amp_q8 + curr->attack_step >= ENV_PEAK) {
           curr->phase = ENV_DECAY;
           curr->env_amp_q8 = ENV_PEAK;
         } else {
-          curr->env_amp_q8 += ENV_ATTACK_PER_TICK;
+          curr->env_amp_q8 += curr->attack_step;
           /* no phase change */
         }
         break;
       case (ENV_DECAY):
-        if (curr->env_amp_q8 - ENV_DECAY_PER_TICK <= curr->sustain) {
+        if (curr->env_amp_q8 - curr->decay_step <= curr->sustain) {
           curr->phase = ENV_SUSTAIN;
           curr->env_amp_q8 = curr->sustain;
         } else {
           /* no phase change */
-          curr->env_amp_q8 -= ENV_DECAY_PER_TICK;
+          curr->env_amp_q8 -= curr->decay_step;
         }
         break;
       case (ENV_SUSTAIN):
         curr->env_amp_q8 = curr->sustain;
         break;
       case (ENV_RELEASE):
-        if (curr->env_amp_q8 <= ENV_RELEASE_PER_TICK) {
+        if (curr->env_amp_q8 <= curr->release_step) {
           curr->phase = ENV_IDLE;
           curr->env_amp_q8 = 0;
           curr->in_use = false;
@@ -188,7 +195,7 @@ void *run_adsr_envelope(void *arg) {
           kill_voice = true;
         } else {
           /* no phase change */
-          curr->env_amp_q8 -= ENV_RELEASE_PER_TICK;
+          curr->env_amp_q8 -= curr->release_step;
         }
       }
       curr_amp = curr->env_amp_q8;
