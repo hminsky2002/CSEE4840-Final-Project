@@ -1,4 +1,4 @@
+wavs/harry_aaa.wav,568,0
 wavs/harry_voice.wav,330,0
-wavs/voice_yell.wav,708,0
 wavs/scary_organ.wav,348,0
 wavs/trumpet.wav,2667,0
