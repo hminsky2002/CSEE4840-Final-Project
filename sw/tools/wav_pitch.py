@@ -139,7 +139,7 @@ def main():
     print(f"\nsemitone bump at base_step={bs_recorded}: ~{bump:.1f}  "
           f"({'clean' if bump > 1.5 else 'chunky'} tracking near MIDI {args.target_midi})")
     print(f"\nsuggested manifest line:")
-    print(f"  wavs/{args.wav.split('/')[-1]},{bs_recorded}")
+    print(f"  wavs/{args.wav.split('/')[-1]},{bs_recorded},0")
 
 
 if __name__ == "__main__":
