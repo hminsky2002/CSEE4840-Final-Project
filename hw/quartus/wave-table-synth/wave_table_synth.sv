@@ -21,15 +21,15 @@ module wave_table_synth (
 
     wire in_wavetable = (address[17] == 1'b0);
     wire in_osc_region = (address[17] == 1'b1);
-    wire in_osc_registers = in_osc_region && (address[16:7] == 10'h000);
+    /* per-voice block: 32 voices x 8 16-bit slots (5 used, 3 reserved) = 0x00000..0x000FF
+       per-voice slots: +0 step, +1 ctrl, +2 table, +3 amp, +4 resolution */
+    wire in_osc_registers = in_osc_region && (address[16:8] == 9'h000);
     wire in_hex_registers = in_osc_region && (address[16:7] == 10'h002);
-    wire is_amp_ctrl = in_osc_region && (address[16:0] == 17'h00080);
-    wire is_osc_resolution = in_osc_region && (address[16:5] == 12'h005); /* 0x000A0..0x000BF */
+    wire is_amp_ctrl = in_osc_region && (address[16:0] == 17'h00180);
 
-    wire [4:0] osc_addr = address[6:2];
-    wire [1:0] reg_addr = address[1:0];
+    wire [4:0] osc_addr = address[7:3];
+    wire [2:0] reg_addr = address[2:0];
     wire [2:0] hex_addr = address[2:0];
-    wire [4:0] osc_resolution_addr = address[4:0];
 
     seven_segment_display u_seven_segment (
         .clk    (clk),
@@ -78,15 +78,15 @@ module wave_table_synth (
             amp_ctrl_reg <= 8'hFF;
         end else if (chipselect && write && in_osc_registers) begin
             case (reg_addr)
-                2'd0: step_size_reg[osc_addr] <= writedata;
-                2'd1: ctrl_reg[osc_addr] <= writedata[1:0];
-                2'd2: table_sel_reg[osc_addr] <= writedata[1:0];
-                2'd3: osc_amp_reg[osc_addr] <= writedata[7:0]; /* nada */
+                3'd0: step_size_reg[osc_addr] <= writedata;
+                3'd1: ctrl_reg[osc_addr] <= writedata[1:0];
+                3'd2: table_sel_reg[osc_addr] <= writedata[1:0];
+                3'd3: osc_amp_reg[osc_addr] <= writedata[7:0];
+                3'd4: osc_resolution_reg[osc_addr] <= writedata[3:0];
+                default: ; /* slots +5..+7 reserved */
             endcase
         end else if (chipselect && write && is_amp_ctrl) begin
             amp_ctrl_reg <= writedata[7:0];
-        end else if (chipselect && write && is_osc_resolution) begin
-            osc_resolution_reg[osc_resolution_addr] <= writedata[3:0];
         end
     end
 

@@ -6,13 +6,13 @@
 
 #define WAVE_SYNTH_PERIPHERAL_BYTES 0x80000
 
-#define OSC_STEP(v) (0x20000u + (v) * 4u + 0u)
-#define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
-#define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
-#define OSC_AMP(v) (0x20000u + (v) * 4u + 3u)
-#define AMP_CTRL 0x20080u
+#define OSC_STEP(v)       (0x20000u + (v) * 8u + 0u)
+#define OSC_CTRL(v)       (0x20000u + (v) * 8u + 1u)
+#define OSC_TABLE(v)      (0x20000u + (v) * 8u + 2u)
+#define OSC_AMP(v)        (0x20000u + (v) * 8u + 3u)
+#define OSC_RESOLUTION(v) (0x20000u + (v) * 8u + 4u)
 
-#define OSC_RESOLUTION(v) (0x200A0u + (v))
+#define AMP_CTRL 0x20180u
 
 #define HEX_REG(i)   (0x20100u + (i))
 
