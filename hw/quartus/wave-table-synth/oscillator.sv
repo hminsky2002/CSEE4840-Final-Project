@@ -5,6 +5,7 @@ module oscillator(
     input logic [15:0] step_size[0:31],
     input logic [1:0] table_sel[0:31],
     input logic [1:0] ctrl [0:31],
+    input logic [3:0] osc_resolution [0:31],
     input logic [15:0] bram_rdata,
     output logic [16:0] bram_raddr,
     output logic [15:0] osc_sample,
@@ -62,7 +63,8 @@ module oscillator(
                     if (ctrl[osc_to_read] == 2'b11) begin
                             phase[osc_to_read] <= 24'h0;
                         end else if (ctrl[osc_to_read] == 2'b10) begin
-                            phase[osc_to_read] <= phase[osc_to_read] + { step_size[osc_to_read], 8'h0 };
+                            phase[osc_to_read] <= phase[osc_to_read]
+                                + 24'(({8'h0, step_size[osc_to_read]} << osc_resolution[osc_to_read]));
                         end
                     end
 

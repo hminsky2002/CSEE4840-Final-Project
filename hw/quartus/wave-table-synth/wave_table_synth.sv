@@ -21,12 +21,14 @@ module wave_table_synth (
 
     wire in_wavetable = (address[17] == 1'b0);
     wire in_osc_region = (address[17] == 1'b1);
-    wire in_osc_registers = in_osc_region && (address[16:7] == 10'h000);
+    /* per-voice block: 32 voices x 8 16-bit slots (5 used, 3 reserved) = 0x00000..0x000FF
+       per-voice slots: +0 step, +1 ctrl, +2 table, +3 amp, +4 resolution */
+    wire in_osc_registers = in_osc_region && (address[16:8] == 9'h000);
     wire in_hex_registers = in_osc_region && (address[16:7] == 10'h002);
-    wire is_amp_ctrl = in_osc_region && (address[16:0] == 17'h00080);
+    wire is_amp_ctrl = in_osc_region && (address[16:0] == 17'h00180);
 
-    wire [4:0] osc_addr = address[6:2];
-    wire [1:0] reg_addr = address[1:0];
+    wire [4:0] osc_addr = address[7:3];
+    wire [2:0] reg_addr = address[2:0];
     wire [2:0] hex_addr = address[2:0];
 
     seven_segment_display u_seven_segment (
@@ -62,6 +64,7 @@ module wave_table_synth (
     logic [1:0] table_sel_reg [0:31];
     logic [7:0] osc_amp_reg [0:31]; /* per oscillator amp control */
     logic [7:0] amp_ctrl_reg;
+    logic [3:0] osc_resolution_reg [0:31]; /* per-oscillator step_size resolution (left-shift applied to phase increment) */
 
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -70,14 +73,17 @@ module wave_table_synth (
                 ctrl_reg[i] <= 2'b00;
                 table_sel_reg[i] <= 2'h0;
                 osc_amp_reg[i] <= 8'h0;
+                osc_resolution_reg[i] <= 4'd8;
             end
             amp_ctrl_reg <= 8'hFF;
         end else if (chipselect && write && in_osc_registers) begin
             case (reg_addr)
-                2'd0: step_size_reg[osc_addr] <= writedata;
-                2'd1: ctrl_reg[osc_addr] <= writedata[1:0];
-                2'd2: table_sel_reg[osc_addr] <= writedata[1:0];
-                2'd3: osc_amp_reg[osc_addr] <= writedata[7:0]; /* nada */
+                3'd0: step_size_reg[osc_addr] <= writedata;
+                3'd1: ctrl_reg[osc_addr] <= writedata[1:0];
+                3'd2: table_sel_reg[osc_addr] <= writedata[1:0];
+                3'd3: osc_amp_reg[osc_addr] <= writedata[7:0];
+                3'd4: osc_resolution_reg[osc_addr] <= writedata[3:0];
+                default: ; /* slots +5..+7 reserved */
             endcase
         end else if (chipselect && write && is_amp_ctrl) begin
             amp_ctrl_reg <= writedata[7:0];
@@ -114,6 +120,7 @@ module wave_table_synth (
         .step_size    (step_size_reg),
         .table_sel    (table_sel_reg),
         .ctrl         (ctrl_reg),
+        .osc_resolution    (osc_resolution_reg),
         .bram_rdata   (bram_rdata),
         .bram_raddr   (bram_raddr),
         .osc_sample (osc_sample),

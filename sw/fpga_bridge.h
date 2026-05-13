@@ -6,11 +6,13 @@
 
 #define WAVE_SYNTH_PERIPHERAL_BYTES 0x80000
 
-#define OSC_STEP(v) (0x20000u + (v) * 4u + 0u)
-#define OSC_CTRL(v) (0x20000u + (v) * 4u + 1u)
-#define OSC_TABLE(v) (0x20000u + (v) * 4u + 2u)
-#define OSC_AMP(v) (0x20000u + (v) * 4u + 3u)
-#define AMP_CTRL 0x20080u
+#define OSC_STEP(v)       (0x20000u + (v) * 8u + 0u)
+#define OSC_CTRL(v)       (0x20000u + (v) * 8u + 1u)
+#define OSC_TABLE(v)      (0x20000u + (v) * 8u + 2u)
+#define OSC_AMP(v)        (0x20000u + (v) * 8u + 3u)
+#define OSC_RESOLUTION(v) (0x20000u + (v) * 8u + 4u)
+
+#define AMP_CTRL 0x20180u
 
 #define HEX_REG(i)   (0x20100u + (i))
 
@@ -77,6 +79,7 @@ void fpga_set_ctrl(peripheral *lw_bus, int voice, uint16_t ctrl);
 void fpga_set_table(peripheral *lw_bus, int voice, uint16_t slot);
 void fpga_set_amp(peripheral *lw_bus, int voice, uint16_t amp);
 void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern);
+void fpga_set_osc_resolution(peripheral *lw_bus, int voice, uint8_t resolution);
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot);
 void fpga_kill_voice(peripheral *lw_bus, int voice);

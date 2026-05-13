@@ -87,6 +87,13 @@ void fpga_set_hex(peripheral *lw_bus, int idx, uint8_t pattern) {
   lw_bus->regs[HEX_REG(idx)] = pattern & 0x7Fu;
 }
 
+void fpga_set_osc_resolution(peripheral *lw_bus, int voice, uint8_t resolution) {
+  if (voice < 0 || voice >= NUM_OSCILLATORS) {
+    return;
+  }
+  lw_bus->regs[OSC_RESOLUTION(voice)] = (uint16_t)(resolution & 0x0Fu);
+}
+
 void fpga_voice_start(peripheral *lw_bus, int voice, uint16_t step_size,
                       uint16_t slot) {
   if (voice < 0 || voice >= NUM_OSCILLATORS) {

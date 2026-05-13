@@ -1,6 +1,8 @@
 verilator_basics/
 obj_dir
 sw/*.o
+sw/wavetable.bin
+sw/midi_to_fpga
 *db/
 *soc_system/
 *output_files/

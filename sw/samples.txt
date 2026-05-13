@@ -1,1 +1,3 @@
-wavs/saw_8192.wav
+wavs/voice_yell.wav,708,0
+wavs/scary_organ.wav,348,0
+wavs/trumpet.wav,2667,0
