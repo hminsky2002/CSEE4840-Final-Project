@@ -126,19 +126,17 @@ void *run_midi_reciever(void *arg) {
       if (i >= 0) {
         update_display(lw_bus);
       }
-    } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PITCH_BEND) {
-      if (midi_packet.note == 0x7F && midi_packet.attack == 0x7F) {
-        global_wavetable = (global_wavetable + 1) % NUM_TABLE_SLOTS;
-        for (int j = 0; j < NUM_OSCILLATORS; j++) {
-          if (oscillators[j].in_use) {
-            pthread_mutex_lock(&osc_lock);
-            oscillators[j].wavetable_slot = global_wavetable;
-            pthread_mutex_unlock(&osc_lock);
-            fpga_set_table(lw_bus, j, global_wavetable);
-          }
+    } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_PROGRAM_CHANGE) {
+      global_wavetable = midi_packet.note % NUM_TABLE_SLOTS;
+      for (int j = 0; j < NUM_OSCILLATORS; j++) {
+        if (oscillators[j].in_use) {
+          pthread_mutex_lock(&osc_lock);
+          oscillators[j].wavetable_slot = global_wavetable;
+          pthread_mutex_unlock(&osc_lock);
+          fpga_set_table(lw_bus, j, global_wavetable);
         }
-        update_display(lw_bus);
       }
+      update_display(lw_bus);
     } else if (midi_packet.status == 0xB1 && midi_packet.note == 0x07) {
       uint16_t amp = (uint16_t)(midi_packet.attack & 0x7F) << 1;
       fpga_set_master_amp(lw_bus, amp);
