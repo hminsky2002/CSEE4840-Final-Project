@@ -15,6 +15,7 @@ typedef struct {
 #define MIDI_CONTROL_CHANGE 0xB0
 #define MIDI_PROGRAM_CHANGE 0xC0
 #define MIDI_PITCH_BEND 0xE0
+#define MIDI_TREMOLO 0x01   /* CC number used for tremolo depth (mod wheel) */
 
 #define MIDI_STATUS_MASK 0xF0
 #define MIDI_CHANNEL_MASK 0x0F

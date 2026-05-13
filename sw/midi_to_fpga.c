@@ -71,6 +71,18 @@ static void update_display(peripheral *lw_bus) {
 
 double AMP_STEP = 1.0 / 128;
 
+/* Square-wave tremolo, depth controlled by MIDI mod wheel (CC MIDI_TREMOLO).
+   Multipliers are Q8 (256 = unity gain). At full wheel, gain alternates between
+   HIGH and LOW; at wheel=0, both halves are unity. For symmetric loudness,
+   keep HIGH * LOW ≈ 256*256 (geometric mean = unity). */
+#define TREMOLO_RATE_HZ       5
+#define TREMOLO_HIGH_GAIN_Q8  384   /* ×1.5 at full wheel */
+#define TREMOLO_LOW_GAIN_Q8   171   /* ÷1.5 at full wheel (sqrt(384*171) ≈ 256) */
+#define TREMOLO_AMP_MAX       255
+#define TREMOLO_HALF_PERIOD_TICKS (1000 / (2 * TREMOLO_RATE_HZ))
+
+static volatile int mod_wheel_q7 = 0;   /* 0..127 from CC MIDI_TREMOLO */
+
 void *run_midi_reciever(void *arg) {
   peripheral *lw_bus = (peripheral *)arg;
 
@@ -137,9 +149,14 @@ void *run_midi_reciever(void *arg) {
         }
       }
       update_display(lw_bus);
-    } else if (midi_packet.status == 0xB1 && midi_packet.note == 0x07) {
-      uint16_t amp = (uint16_t)(midi_packet.attack & 0x7F) << 1;
-      fpga_set_master_amp(lw_bus, amp);
+    } else if ((midi_packet.status & MIDI_STATUS_MASK) == MIDI_CONTROL_CHANGE) {
+      uint8_t cc = midi_packet.note;
+      uint8_t val = midi_packet.attack & 0x7F;
+      if (cc == MIDI_TREMOLO) {
+        mod_wheel_q7 = val;
+      } else if (cc == 0x07) {
+        fpga_set_master_amp(lw_bus, (uint16_t)val << 1);
+      }
     }
   }
   return NULL;
@@ -149,10 +166,16 @@ void *run_adsr_envelope(void *arg) {
   peripheral *lw_bus = (peripheral *)arg;
   struct timespec tick = {0, ENV_TICK_NS};
   static uint16_t last_written[NUM_OSCILLATORS] = {0};
+  int trem_counter = 0;
+  bool trem_high = true;
 
   while (1) {
     clock_nanosleep(CLOCK_MONOTONIC, 0, &tick, NULL);
-    /* iterate over each oscillator */
+
+    if (++trem_counter >= TREMOLO_HALF_PERIOD_TICKS) {
+      trem_counter = 0;
+      trem_high = !trem_high;
+    }
 
     for (int i = 0; i < NUM_OSCILLATORS; i++) {
       struct oscillator *curr = &oscillators[i];
@@ -202,9 +225,18 @@ void *run_adsr_envelope(void *arg) {
       pthread_mutex_unlock(&osc_lock);
       if (kill_voice)
         fpga_kill_voice(lw_bus, i);
-      if (curr_amp != last_written[i]) {
-        fpga_set_amp(lw_bus, i, curr_amp);
-        last_written[i] = curr_amp;
+
+      int wheel = mod_wheel_q7;
+      int32_t gain_target = trem_high ? TREMOLO_HIGH_GAIN_Q8 : TREMOLO_LOW_GAIN_Q8;
+      int32_t gain_q8 = 256 + ((gain_target - 256) * wheel) / 127;
+      int32_t modulated = ((int32_t)curr_amp * gain_q8) >> 8;
+      if (modulated < 0) modulated = 0;
+      if (modulated > TREMOLO_AMP_MAX) modulated = TREMOLO_AMP_MAX;
+      uint16_t out_amp = (uint16_t)modulated;
+
+      if (out_amp != last_written[i]) {
+        fpga_set_amp(lw_bus, i, out_amp);
+        last_written[i] = out_amp;
       }
     }
   }
