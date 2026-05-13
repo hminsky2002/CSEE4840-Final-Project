@@ -1,4 +1,4 @@
-wavs/BornSlippy.wav,164,0
+wavs/ps20clarinet.wav,22836,0
 wavs/virbraphone.wav,152,0
 wavs/ps20organ.wav,1092,0
-wavs/trumpet.wav,2667,0
+wavs/ps20harpsi.wav,462,0
