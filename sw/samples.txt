@@ -1,4 +1,5 @@
-wavs/ps20clarinet.wav,22836,0
+wavs/harry_voice.wav,330,0
+wavs/mario_piano.wav,300,0
 wavs/virbraphone.wav,152,0
 wavs/ps20organ.wav,1092,0
-wavs/ps20harpsi.wav,462,0
+
