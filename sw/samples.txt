@@ -1,5 +1,3 @@
-wavs/trumpet.wav,1413,0
 wavs/lalalala.wav,198,0
-wavs/ps20organ.wav,1092,0
 
 
