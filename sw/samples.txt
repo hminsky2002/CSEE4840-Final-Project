@@ -1,1 +1,1 @@
-wavs/banana.wav,1571,0
+wavs/trumpet.wav,1413,0
