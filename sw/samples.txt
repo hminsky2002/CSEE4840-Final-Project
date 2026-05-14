@@ -1,1 +1,1 @@
-wavs/BornSlippy.wav,165,0
+wavs/BornSlippy.wav,98,0
