@@ -1,2 +1,2 @@
-wavs/40.wav,2542,0
-wavs/48.wav,1411,0
+wavs/ps20organ.wav,2184,0
+wavs/virbraphone.wav,152,0
