@@ -1,1 +1,1 @@
-wavs/thx.wav,30,0
+wavs/THX Sound Effect.wav,26,0
