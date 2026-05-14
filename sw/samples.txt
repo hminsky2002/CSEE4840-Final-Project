@@ -1,2 +1,2 @@
-wavs/violin.wav,129,0
-wavs/flute.wav,64,0
+wavs/violin.wav,64,0
+wavs/flute.wav,180,0
